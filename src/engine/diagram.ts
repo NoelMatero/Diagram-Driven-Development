@@ -392,7 +392,7 @@ export async function connectNodes(
 
   // Arrows already joining a pair of shapes, so a second one between the same
   // two does not land exactly on top of the first.
-  const pairKey = (a: string, b: string) => [a, b].sort().join(" ");
+  const pairKey = (a: string, b: string) => [a, b].sort().join("\0");
   const lanes = new Map<string, number>();
   for (const element of live) {
     if (element.type !== "arrow") continue;

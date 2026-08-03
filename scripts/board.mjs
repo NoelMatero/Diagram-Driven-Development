@@ -12,7 +12,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { readBoard, writeBoard } from "../src/engine/board-file.ts";
-import { startBoardServer } from "../src/server/board-server.ts";
+import { resolveBoardPort, startBoardServer } from "../src/server/board-server.ts";
 
 const target = process.argv[2];
 if (!target) {
@@ -24,7 +24,7 @@ const file = path.resolve(process.cwd(), path.extname(target) ? target : `${targ
 // Materialise the file first so the watcher has something to follow.
 await writeBoard(file, await readBoard(file));
 
-const server = await startBoardServer({ file, port: Number(process.env.BOARD_PORT ?? 4747) });
+const server = await startBoardServer({ file, port: resolveBoardPort(process.env.BOARD_PORT) });
 console.log(`board  ${path.relative(process.cwd(), file)}`);
 console.log(`live   ${server.url}`);
 console.log("ctrl-c to stop");

@@ -7,6 +7,7 @@
  * .excalidraw file, so a diagram survives the session, opens in any Excalidraw
  * editor, and diffs in git.
  */
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
@@ -25,7 +26,12 @@ import {
 import { readGraph } from "../engine/graph";
 import { loadConverter } from "../engine/convert";
 import { renderBoardToPng } from "../engine/render";
-import { probeBoardServer, startBoardServer, type RunningBoardServer } from "../server/board-server";
+import {
+  probeBoardServer,
+  resolveBoardPort,
+  startBoardServer,
+  type RunningBoardServer,
+} from "../server/board-server";
 import { relativeToWorkspace, resolveBoardPath, resolveInWorkspace, WORKSPACE_ROOT } from "./paths";
 
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
@@ -38,6 +44,24 @@ const IMAGE_MIME_BY_EXT: Record<string, string> = {
 };
 
 const MAX_IMAGE_BYTES = 4_000_000;
+
+/**
+ * Board id for an image, derived from its workspace-relative path.
+ *
+ * The basename alone is not enough: `ui/shot.png` and `api/shot.png` reduce to
+ * the same string, and so do `shot a.png` and `shot-a.png` once punctuation is
+ * replaced. Two distinct images sharing an id overwrite each other's data in
+ * board.files, so the full path goes in, and a digest of it settles the cases
+ * where sanitising still collides.
+ */
+function imageElementId(relativePath: string): string {
+  const slug = relativePath
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(-48);
+  const digest = createHash("sha1").update(relativePath).digest("hex").slice(0, 8);
+  return `img-${slug || "image"}-${digest}`;
+}
 
 function text(value: unknown) {
   return {
@@ -93,22 +117,31 @@ const edgeSchema = z.object({
  */
 let live: RunningBoardServer | undefined;
 
-const BOARD_PORT = Number(process.env.BOARD_PORT ?? 4747);
+/**
+ * Read on use rather than once at load, so a malformed BOARD_PORT fails only
+ * the two tools that need a port. Resolving it at module scope would throw
+ * before the transport connects and take the whole server down, including every
+ * file tool that never touches the network.
+ */
+function boardPort(): number {
+  return resolveBoardPort(process.env.BOARD_PORT);
+}
 
 /** Asks a board server owned by another process to show this file. */
 async function steerExistingBoard(file: string): Promise<string | undefined> {
-  const serving = await probeBoardServer(BOARD_PORT);
+  const port = boardPort();
+  const serving = await probeBoardServer(port);
   if (serving === undefined) return undefined;
-  if (serving === file) return `http://127.0.0.1:${BOARD_PORT}/`;
+  if (serving === file) return `http://127.0.0.1:${port}/`;
   try {
-    const response = await fetch(`http://127.0.0.1:${BOARD_PORT}/api/file`, {
+    const response = await fetch(`http://127.0.0.1:${port}/api/file`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file }),
       signal: AbortSignal.timeout(2000),
     });
     if (!response.ok) return undefined;
-    return `http://127.0.0.1:${BOARD_PORT}/`;
+    return `http://127.0.0.1:${port}/`;
   } catch {
     return undefined;
   }
@@ -418,22 +451,47 @@ server.registerTool(
       const renderWidth = Math.min(960, Math.max(120, width ?? Math.min(640, naturalWidth)));
       const renderHeight = Math.max(80, Math.round(renderWidth * (naturalHeight / Math.max(1, naturalWidth))));
 
-      const fileId = `img-${path.basename(imageFile).replace(/[^a-zA-Z0-9]/g, "-")}`;
-      const { convertSkeletons } = await import("../engine/convert");
-      const created = await convertSkeletons([
-        {
-          id: fileId,
-          type: "image",
-          fileId,
-          x: 0,
-          y: bottom + 120,
-          width: renderWidth,
-          height: renderHeight,
-        },
-      ]);
+      const fileId = imageElementId(relativeToWorkspace(imageFile));
+      // Placing the same image twice used to append a second element carrying
+      // the id the first one already had, and convertSkeletons only checks for
+      // duplicates inside its own batch. Two ids alike is a corrupt scene, so a
+      // repeat placement updates what is there instead of stacking onto it.
+      const existing = board.elements.find((element) => String(element.id) === fileId);
+      const elements = existing
+        ? board.elements.map((element) =>
+            String(element.id) === fileId
+              ? {
+                  ...element,
+                  // Position is deliberately left alone: the user may have moved
+                  // the image, and re-placing it should not drag it back.
+                  width: renderWidth,
+                  height: renderHeight,
+                  isDeleted: false,
+                  version: (Number(element.version) || 1) + 1,
+                }
+              : element,
+          )
+        : [
+            ...board.elements,
+            ...(await (await import("../engine/convert")).convertSkeletons(
+              [
+                {
+                  id: fileId,
+                  type: "image",
+                  fileId,
+                  x: 0,
+                  y: bottom + 120,
+                  width: renderWidth,
+                  height: renderHeight,
+                },
+              ],
+              { origin: "image" },
+            )),
+          ];
+
       await writeBoard(file, {
         ...board,
-        elements: [...board.elements, ...created],
+        elements,
         files: {
           ...board.files,
           [fileId]: {
@@ -448,6 +506,7 @@ server.registerTool(
       return text({
         wrote: relativeToWorkspace(file),
         placed: relativeToWorkspace(imageFile),
+        ...(existing ? { replacedInPlace: fileId } : { elementId: fileId }),
         size: `${renderWidth}x${renderHeight}`,
       });
     }),
@@ -482,7 +541,8 @@ server.registerTool(
     guard(async () => {
       // Ask the port rather than trusting our own handle: the board may belong
       // to another session, and ours may have been superseded.
-      const serving = await probeBoardServer(BOARD_PORT);
+      const port = boardPort();
+      const serving = await probeBoardServer(port);
       if (serving === undefined) {
         return text({
           running: false,
@@ -491,7 +551,7 @@ server.registerTool(
       }
       return text({
         running: true,
-        url: `http://127.0.0.1:${BOARD_PORT}/`,
+        url: `http://127.0.0.1:${port}/`,
         showing: relativeToWorkspace(serving),
         ownedByThisSession: live?.file === serving,
       });
@@ -523,7 +583,7 @@ server.registerTool(
       // starting a second board the user has to know about.
       let url = live ? undefined : await steerExistingBoard(file);
       if (!url) {
-        live ??= await startBoardServer({ file, port: BOARD_PORT, root: WORKSPACE_ROOT });
+        live ??= await startBoardServer({ file, port: boardPort(), root: WORKSPACE_ROOT });
         await followBoard(file);
         url = live.url;
       }

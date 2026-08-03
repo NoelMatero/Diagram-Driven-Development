@@ -9,7 +9,12 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { emptyBoard, readBoard, writeBoard, type BoardFile } from "../src/engine/board-file";
-import { startBoardServer, type RunningBoardServer } from "../src/server/board-server";
+import {
+  DEFAULT_BOARD_PORT,
+  resolveBoardPort,
+  startBoardServer,
+  type RunningBoardServer,
+} from "../src/server/board-server";
 
 let workspace: string;
 let boardFile: string;
@@ -235,6 +240,22 @@ describe("board server", () => {
     expect(response.status).toBe(404);
     expect(server.file).toBe(boardFile);
   }, 20_000);
+
+  /**
+   * Number("abc") is NaN, and NaN is not nullish, so a coerced port survives
+   * every `?? default` on the way down to listen(). The reason to refuse rather
+   * than fall back is diagnostic: a NaN port makes the health probe report "no
+   * board running", which is the one answer that sends a caller looking in
+   * entirely the wrong place.
+   */
+  it("refuses a port that is not a port instead of coercing it", () => {
+    expect(resolveBoardPort(undefined)).toBe(DEFAULT_BOARD_PORT);
+    expect(resolveBoardPort("")).toBe(DEFAULT_BOARD_PORT);
+    expect(resolveBoardPort(" 5100 ")).toBe(5100);
+    for (const bad of ["abc", "4747abc", "0", "65536", "-1", "80.5", "NaN"]) {
+      expect(() => resolveBoardPort(bad), bad).toThrow(/not a port number/);
+    }
+  });
 
   it("reports health with the file it is serving", async () => {
     const health = (await (await fetch(api("/api/health"))).json()) as { ok: boolean; file: string };

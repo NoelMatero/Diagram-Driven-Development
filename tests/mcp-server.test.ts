@@ -4,7 +4,7 @@
  * schemas, serialisation, or path handling break, these fail.
  */
 import { mkdtempSync, rmSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -248,6 +248,43 @@ describe("board MCP server", () => {
     });
     expect((result as { isError?: boolean }).isError).toBe(true);
     expect(textOf(result)).toMatch(/Available: arch/);
+  }, 120_000);
+
+  /**
+   * Two images whose names sanitise to the same string used to land on the same
+   * element id and overwrite each other in board.files, and re-placing one
+   * appended a second element carrying an id the first already had.
+   */
+  it("gives every image its own id and updates in place when re-placed", async () => {
+    const board = "with-images.excalidraw";
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await writeFile(path.join(workspace, "shot a.png"), png);
+    await writeFile(path.join(workspace, "shot-a.png"), png);
+    await call("create_diagram", { path: board, nodes: [{ id: "n", label: "N" }] });
+
+    const first = jsonOf(await call("place_image", { path: board, image: "shot a.png" }));
+    const second = jsonOf(await call("place_image", { path: board, image: "shot-a.png" }));
+    expect(first.elementId).not.toBe(second.elementId);
+
+    // Move it, the way a user would, then re-place the same file.
+    await call("edit_diagram", { path: board, updates: [{ id: first.elementId, x: 500, y: 700 }] });
+    const again = jsonOf(await call("place_image", { path: board, image: "shot a.png" }));
+    expect(again.replacedInPlace).toBe(first.elementId);
+
+    const parsed = JSON.parse(await readFile(path.join(workspace, board), "utf8"));
+    const images = parsed.elements.filter(
+      (element: { type: string; isDeleted?: boolean }) => element.type === "image" && !element.isDeleted,
+    ) as Array<{ id: string; x: number; y: number }>;
+    const ids = images.map((element) => element.id);
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    // Both images must still have their own data behind them.
+    expect(Object.keys(parsed.files)).toEqual(expect.arrayContaining(ids));
+    // Re-placing must not drag the image back to where it was first put.
+    expect(images.find((element) => element.id === first.elementId)).toMatchObject({ x: 500, y: 700 });
   }, 120_000);
 
   it("returns an error result rather than crashing on a bad graph", async () => {

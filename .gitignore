@@ -12,5 +12,3 @@ playwright-report/
 .probe/
 # Built by scripts/build-vendor.mjs on install; ~13 MB, never committed.
 vendor/
-# User-supplied music track; copyrighted audio never gets committed.
-src/renderer/assets/wearing-my-rolex.*

@@ -5,7 +5,7 @@ import type { Font } from "fontkit";
 
 const fontkit = (fontkitModule as { default?: typeof fontkitModule }).default ?? fontkitModule;
 
-import { setDiagramTextMeasurer } from "../../src/renderer/diagram-layout";
+import { setDiagramTextMeasurer } from "../../src/engine/layout";
 
 let faces: Font[] | null = null;
 

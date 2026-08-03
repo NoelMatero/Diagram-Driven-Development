@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { convertSkeletons, loadConverter } from "../src/engine/convert";
 import { normalizeElements } from "../src/engine/normalize";
-import { planDiagramLayout } from "../src/renderer/diagram-layout";
+import { planDiagramLayout } from "../src/engine/layout";
 import { installExcalifontMeasurer } from "./helpers/excalifont";
 
 installExcalifontMeasurer();

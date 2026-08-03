@@ -52,7 +52,7 @@ explicitly.
 
 ```jsonc
 // customData on a generated node
-{ "node": "auth", "ref": "src/main/voice-token.ts" }
+{ "node": "layout", "ref": "src/engine/layout.ts" }
 ```
 
 Add an optional `ref` to the `create_diagram` node schema — a repo-relative path

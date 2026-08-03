@@ -1,4 +1,5 @@
 import ELK from "elkjs/lib/elk.bundled";
+import { readableInk } from "../engine/contrast";
 import type { ElkExtendedEdge, ElkNode } from "elkjs/lib/elk-api";
 
 type JsonObject = Record<string, unknown>;
@@ -14,7 +15,7 @@ export type GraphNode = {
   strokeColor?: string;
   rounded?: boolean;
 };
-export type GraphEdge = { from: string; to: string; label?: string };
+export type GraphEdge = { from: string; to: string; label?: string; strokeColor?: string };
 export type DiagramLayoutOptions = {
   direction?: "RIGHT" | "DOWN";
   nodeSpacing?: number;
@@ -297,7 +298,12 @@ export async function planDiagramLayout(
       backgroundColor: node.backgroundColor ?? "transparent",
       ...(node.backgroundColor && node.backgroundColor !== "transparent" ? { fillStyle: "solid" } : {}),
       ...(type === "rectangle" && node.rounded ? { roundness: { type: 3 } } : {}),
-      label: { text: node.label },
+      // Excalidraw would give the label the container's stroke colour, which
+      // on a filled shape can be nearly the same colour as the fill.
+      label: {
+        text: node.label,
+        strokeColor: readableInk(node.backgroundColor, node.strokeColor ?? "#1e1e1e"),
+      },
     };
   });
 
@@ -338,6 +344,7 @@ export async function planDiagramLayout(
       start: { id: elementIdByNode.get(edge.from) },
       end: { id: elementIdByNode.get(edge.to) },
       endArrowhead: "arrow",
+      strokeColor: edge.strokeColor ?? "#1e1e1e",
     });
     const label = elkEdge?.labels?.[0];
     if (label?.text) {
@@ -352,7 +359,9 @@ export async function planDiagramLayout(
         text: label.text,
         fontSize: EDGE_LABEL_FONT_SIZE,
         fontFamily: 5,
-        strokeColor: "#1e1e1e",
+        // Edge labels sit on the canvas, not on a fill, so they follow the
+        // edge's own colour.
+        strokeColor: edge.strokeColor ?? "#1e1e1e",
         backgroundColor: "transparent",
       });
     }

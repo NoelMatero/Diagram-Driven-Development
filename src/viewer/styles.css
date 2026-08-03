@@ -1,0 +1,70 @@
+:root {
+  color-scheme: light;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.board-root {
+  position: relative;
+  height: 100%;
+}
+
+/* Sits above the Excalidraw UI layer without stealing pointer events. */
+.status {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 8%);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 8%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #555;
+  pointer-events: none;
+  user-select: none;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.status-live {
+  color: #2f9e44;
+}
+
+.status-saving {
+  color: #f08c00;
+}
+
+.status-connecting {
+  color: #868e96;
+}
+
+.status-offline {
+  color: #e03131;
+}
+
+.status-file {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #868e96;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}

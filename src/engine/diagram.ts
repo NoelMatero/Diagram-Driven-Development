@@ -17,7 +17,7 @@ import {
   type GraphEdge,
   type GraphNode,
   type DiagramLayoutOptions,
-} from "../renderer/diagram-layout";
+} from "./layout";
 
 /** Vertical breathing room between an existing board and a new diagram. */
 const STACK_GAP = 160;

@@ -8,7 +8,7 @@ import {
   planDiagramLayout,
   wrapLabel,
   type LayoutParams,
-} from "../src/renderer/diagram-layout";
+} from "../src/engine/layout";
 import { installExcalifontMeasurer, uninstallExcalifontMeasurer } from "./helpers/excalifont";
 
 beforeAll(() => installExcalifontMeasurer());

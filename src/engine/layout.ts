@@ -1,5 +1,13 @@
+/**
+ * Graph -> laid-out Excalidraw skeletons.
+ *
+ * ELK decides the geometry; this turns its result into the skeleton shapes the
+ * converter understands, with real font metrics behind every size so a label
+ * never overflows the box drawn for it. Callers supply meaning (nodes, edges,
+ * labels) and never coordinates.
+ */
 import ELK from "elkjs/lib/elk.bundled";
-import { readableInk } from "../engine/contrast";
+import { readableInk } from "./contrast";
 import type { ElkExtendedEdge, ElkNode } from "elkjs/lib/elk-api";
 
 type JsonObject = Record<string, unknown>;

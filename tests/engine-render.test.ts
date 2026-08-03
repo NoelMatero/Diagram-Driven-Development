@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { convertSkeletons } from "../src/engine/convert";
 import { emptyBoard } from "../src/engine/board-file";
 import { renderBoardToPng } from "../src/engine/render";
-import { planDiagramLayout } from "../src/renderer/diagram-layout";
+import { planDiagramLayout } from "../src/engine/layout";
 import { installExcalifontMeasurer } from "./helpers/excalifont";
 
 installExcalifontMeasurer();

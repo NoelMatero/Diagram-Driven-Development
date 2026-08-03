@@ -2,37 +2,24 @@
   "name": "board-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "A realtime voice-driven Excalidraw workspace powered by Pi agents.",
+  "description": "Diagram-driven development: an MCP server that gives Claude read/write access to Excalidraw diagrams that live in the repo, plus a live local board.",
   "type": "module",
-  "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "dev:web": "concurrently --kill-others --names backend,web \"tsx watch src/server/index.ts\" \"vite --config vite.browser.config.ts\"",
-    "dev:web:backend": "tsx watch src/server/index.ts",
-    "dev:web:frontend": "vite --config vite.browser.config.ts",
-    "build": "electron-vite build",
+    "mcp": "tsx src/mcp/server.ts",
+    "board": "tsx scripts/board.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
+    "build:viewer": "vite build --config vite.viewer.config.ts",
     "postinstall": "node scripts/build-vendor.mjs && npm run build:viewer",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e:landing": "node scripts/e2e-landing-page.mjs",
-    "test:e2e:interactive": "node scripts/e2e-interactive.mjs",
-    "start": "electron-vite preview",
-    "package:mac": "npm run build && electron-builder --mac dmg --arm64",
+    "test:e2e:board": "tsx scripts/e2e-live-board.mjs",
     "diagram:example": "tsx scripts/make-example-diagram.mjs",
-    "diagram:render": "tsx scripts/render-diagram.mjs",
-    "mcp": "tsx src/mcp/server.ts",
-    "build:viewer": "vite build --config vite.viewer.config.ts",
-    "board": "tsx scripts/board.mjs"
+    "diagram:render": "tsx scripts/render-diagram.mjs"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "0.80.10",
-    "@earendil-works/pi-coding-agent": "0.80.10",
     "@excalidraw/excalidraw": "0.18.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@openai/agents": "0.13.5",
-    "dotenv": "^17.4.2",
     "elkjs": "0.11.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -44,10 +31,6 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
-    "concurrently": "^10.0.3",
-    "electron": "43.1.1",
-    "electron-builder": "26.8.1",
-    "electron-vite": "5.0.0",
     "esbuild": "0.25.12",
     "fontkit": "^2.0.4",
     "playwright": "^1.61.1",
@@ -55,32 +38,6 @@
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vitest": "4.1.0"
-  },
-  "build": {
-    "appId": "ai.board.desktop",
-    "productName": "Board AI",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "out/**/*",
-      "package.json"
-    ],
-    "mac": {
-      "category": "public.app-category.developer-tools",
-      "hardenedRuntime": true,
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        }
-      ]
-    },
-    "dmg": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
-    }
   },
   "engines": {
     "node": ">=22.19.0"

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "board",
+  "displayName": "Diagram-Driven Development",
+  "version": "0.1.0",
+  "description": "Excalidraw diagrams that live in the repo: Claude draws them, reads them back as a graph, and writes code from them. Includes a live local board you can draw on at the same time.",
+  "author": {
+    "name": "Noel Matero",
+    "url": "https://github.com/NoelMatero"
+  },
+  "repository": "https://github.com/NoelMatero/Diagram-Driven-Development",
+  "keywords": ["diagram", "excalidraw", "architecture", "documentation", "mcp"],
+  "license": "MIT",
+  "mcpServers": {
+    "board": {
+      "command": "npx",
+      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/src/mcp/server.ts"],
+      "env": {
+        "BOARD_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
+  }
+}

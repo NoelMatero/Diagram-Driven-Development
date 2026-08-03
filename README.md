@@ -33,24 +33,40 @@ Claude gets that file as a first-class artifact. It can draw a diagram, read one
 
 **Your drawings are never redrawn.** Generated elements carry a `customData` marker; anything without one is yours. Regeneration replaces only what it made before, and `read_diagram` labels every fact `recorded` (drawn by a tool, exact) or `inferred` (hand-drawn, derived from geometry), so a caller knows what to trust.
 
-## Setup
+## Install
+
+It is a Claude Code plugin. From inside Claude Code:
+
+```
+/plugin marketplace add NoelMatero/Diagram-Driven-Development
+/plugin install board@diagram-driven-development
+```
+
+That brings the ten board tools and a `diagram` skill. Diagrams are written into
+whichever project you are working in, never into the plugin's own directory.
+
+Then just ask: *"Draw how this project works to docs/diagrams/architecture.excalidraw and open the board."*
+
+## Working on the plugin itself
 
 ```bash
-npm install          # also builds the headless Excalidraw bundle and the viewer
+npm install    # builds the headless Excalidraw bundle and the viewer
 npm test
 ```
 
-Register the server with Claude Code — the `.mcp.json` in this repo already does:
+Working inside this repo needs no install: the `.mcp.json` here registers the
+server for this project, so edits to `src/` take effect on the next reconnect.
 
-```json
-{
-  "mcpServers": {
-    "board": { "command": "npx", "args": ["tsx", "src/mcp/server.ts"] }
-  }
-}
+To exercise the plugin from *another* project without waiting on a release, link
+it into a skills directory — it loads in place rather than being copied:
+
+```bash
+ln -s "$PWD" ~/.claude/skills/board    # loads as board@skills-dir
 ```
 
-Then ask for what you want: *"Draw how this project works to docs/diagrams/architecture.excalidraw and open the board."*
+A marketplace install copies into a version-pinned cache instead, so bump
+`version` in `.claude-plugin/plugin.json` to ship an update; without a bump,
+existing users stay on the version they have.
 
 ## Tools
 

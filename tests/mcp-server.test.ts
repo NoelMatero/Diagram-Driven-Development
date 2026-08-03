@@ -287,6 +287,45 @@ describe("board MCP server", () => {
     expect(images.find((element) => element.id === first.elementId)).toMatchObject({ x: 500, y: 700 });
   }, 120_000);
 
+  /**
+   * Tool results are charged to a context window, and the defaults are what a
+   * model pays without asking. A raw element dump ran to ~25k tokens on one
+   * 24-node board, most of it seeds, nonces and fill styles nothing can use.
+   */
+  it("keeps read_diagram lean by default and opt-in when detail is wanted", async () => {
+    const board = "cost.excalidraw";
+    const nodes = Array.from({ length: 20 }, (_, index) => ({ id: `n${index}`, label: `Node ${index}` }));
+    await call("create_diagram", {
+      path: board,
+      title: "Cost",
+      nodes,
+      edges: nodes.slice(1).map((node, index) => ({ from: nodes[index].id, to: node.id, label: "to" })),
+    });
+
+    const lean = textOf(await call("read_diagram", { path: board }));
+    const withGeometry = textOf(await call("read_diagram", { path: board, geometry: true }));
+    const withElements = textOf(await call("read_diagram", { path: board, includeElements: true }));
+
+    // Not pretty-printed: indentation was over a third of the response.
+    expect(lean).not.toContain("\n");
+    // Geometry is real detail, so it must cost something and be off by default.
+    expect(withGeometry.length).toBeGreaterThan(lean.length);
+    const leanNodes = (JSON.parse(lean) as { nodes: Array<Record<string, unknown>> }).nodes;
+    expect(leanNodes[0]).not.toHaveProperty("x");
+    expect(leanNodes[0]).toHaveProperty("elementId");
+    expect(
+      (JSON.parse(withGeometry) as { nodes: Array<Record<string, unknown>> }).nodes[0],
+    ).toHaveProperty("x");
+
+    // Elements are projected to what an edit addresses, not dumped raw.
+    const elements = (JSON.parse(withElements) as { elements: Array<Record<string, unknown>> }).elements;
+    expect(elements.length).toBeGreaterThan(20);
+    for (const key of ["seed", "versionNonce", "roughness", "groupIds", "customData"]) {
+      expect(elements[0], key).not.toHaveProperty(key);
+    }
+    expect(elements[0]).toMatchObject({ id: expect.any(String), type: expect.any(String) });
+  }, 120_000);
+
   it("returns an error result rather than crashing on a bad graph", async () => {
     const result = await client.callTool({
       name: "create_diagram",

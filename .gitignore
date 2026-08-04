@@ -10,5 +10,8 @@ test-results/
 playwright-report/
 .e2e/
 .probe/
-# Built by scripts/build-vendor.mjs on install; ~13 MB, never committed.
-vendor/
+# The two bundles scripts/build-vendor.mjs writes on install; ~13 MB, never
+# committed. The leading slash matters: an unanchored `vendor/` also matches
+# src/engine/vendor/, whose hand-written entry points are the build's *input*.
+# Ignoring those made a clean clone unbuildable — see .github/workflows/ci.yml.
+/vendor/

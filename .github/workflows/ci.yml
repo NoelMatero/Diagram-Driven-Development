@@ -1,0 +1,26 @@
+# Builds the repo from nothing on every push. `npm ci` runs the postinstall
+# (build-vendor + build:viewer), so this fails if a file the build needs was
+# never committed — the bug that made a clean clone unbuildable and went
+# unnoticed because nothing but a developer's warm working tree ever built it.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The floor from package.json engines, not the latest node: if the
+      # declared minimum cannot build, the declaration is wrong.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.19.0"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

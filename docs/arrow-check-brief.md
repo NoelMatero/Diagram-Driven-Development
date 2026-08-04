@@ -19,7 +19,7 @@ has stopped being true, without crying wolf?
   a model "does this diagram match the code?" costs tokens on every turn, answers
   differently each time, and cannot run constantly. Static checks cost nothing and
   are repeatable. This is the constraint that shapes everything else.
-- **Reports, never auto-fixes.** Fixing is the `/fix-drift` command, invoked by a
+- **Reports, never auto-fixes.** Fixing is the `/update-diagram` command, invoked by a
   human who decided it was worth it. See `docs/drift-check.md` for why the
   automatic version was designed and rejected.
 - **Silence when clean is the whole design.** This runs on every turn via a `Stop`
@@ -30,7 +30,7 @@ has stopped being true, without crying wolf?
 ## What exists today
 
 `src/engine/drift.ts`, surfaced three ways: the `check_drift` MCP tool,
-`scripts/check-drift.mjs` (the hook and CLI), and `/fix-drift` (`commands/`).
+`scripts/check-drift.mjs` (the hook and CLI), and `/update-diagram` (`commands/`).
 
 A node can carry a `ref`: `src/engine/layout.ts`, or `path#symbol`. Refs are
 `recorded` when a tool drew the node, or `inferred` when the ref was guessed from a

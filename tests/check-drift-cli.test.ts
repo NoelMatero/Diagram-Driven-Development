@@ -97,7 +97,7 @@ describe("check-drift on the command line", () => {
     // execFile pipes the child's stderr, so it is not a TTY — exactly a hook's
     // situation, and exactly the case the old TTY-gated guidance stayed silent in.
     const result = await checkDrift();
-    expect(result.stderr).toContain("/fix-drift");
+    expect(result.stderr).toContain("/update-diagram");
   }, 120_000);
 
   it("does not name a box whose code is still there", async () => {

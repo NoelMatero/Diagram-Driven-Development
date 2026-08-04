@@ -58,7 +58,7 @@ system, or anything you are sketching out has nothing to point at, and inventing
 a path there is worse than leaving it off.
 
 Run `check_drift` after changing module structure, and regenerate the diagram it
-complains about — `/fix-drift` does exactly that if the user asks for it by name.
+complains about — `/update-diagram` does exactly that if the user asks for it by name.
 A clean report with `checked: 0` means no node had a ref, not that the diagram is
 right.
 

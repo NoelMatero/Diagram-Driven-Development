@@ -102,6 +102,6 @@ if (drifted > 0) {
   // without being told what to do about it is where this stopped being useful:
   // the findings name the problem, and the reader still has to work out that
   // anything can be done at all. One line, and it names the command.
-  console.error("\nRun /fix-drift to have it redrawn, or say which boxes no longer belong.");
+  console.error("\nRun /update-diagram to bring it back in line, or say which boxes no longer belong.");
   process.exit(1);
 }

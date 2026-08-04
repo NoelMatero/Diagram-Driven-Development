@@ -5,7 +5,7 @@ the `check_drift` tool, `scripts/check-drift.mjs`, and a `Stop` hook in
 `.claude/settings.json`. Unrepresented modules remain design; the rest of this file is the
 reasoning behind the complete picture.
 
-Fixing is a `/fix-drift` command, and deliberately not automatic. See
+Fixing is a `/update-diagram` command, and deliberately not automatic. See
 "Reporting is not the same as being actionable" below for why the exit-2
 auto-fix was designed and then not built.
 
@@ -136,11 +136,11 @@ that anything can be done about it. The guidance line existed, but it was gated 
 it actually runs. So in normal use nobody ever saw it. Measured against the old
 script from a pipe: findings, then nothing.
 
-Fixed by printing one line that names `/fix-drift`, unconditionally. The earlier
+Fixed by printing one line that names `/update-diagram`, unconditionally. The earlier
 reasoning for the gate — that from a hook this is a third line nobody asked to
 read — was right about noise and wrong about which line was noise.
 
-**`/fix-drift` is a command, not an automatic behaviour.** The alternative was
+**`/update-diagram` is a command, not an automatic behaviour.** The alternative was
 designed and rejected: exit **2** instead of 1 puts the report in front of the
 model and blocks the turn from ending, which is precisely "go and fix the
 diagram". It was not built, for two reasons.

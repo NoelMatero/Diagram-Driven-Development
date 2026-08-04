@@ -46,16 +46,14 @@
     "diagram:render": "tsx scripts/render-diagram.mjs"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "0.18.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "elkjs": "0.11.0",
     "fontkit": "^2.0.4",
     "playwright-core": "1.61.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
     "zod": "4.3.6"
   },
   "devDependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
     "@types/fontkit": "^2.0.9",
     "@types/node": "24.10.1",
     "@types/react": "19.2.14",
@@ -63,6 +61,8 @@
     "@vitejs/plugin-react": "5.1.4",
     "esbuild": "0.25.12",
     "playwright": "1.61.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "tsx": "^4.23.1",
     "typescript": "5.9.3",
     "vite": "7.3.1",

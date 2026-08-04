@@ -98,11 +98,10 @@ for (const file of await boardsToCheck(boards)) {
 }
 
 if (drifted > 0) {
-  // Only when a person is watching a terminal. From a hook this is the third
-  // and fourth line of something nobody asked to read, and the two lines above
-  // already say everything actionable.
-  if (process.stderr.isTTY) {
-    console.error("\nAsk Claude to redraw it, or delete the box if it no longer belongs.");
-  }
+  // Shown from a hook too, not just a terminal. Being told a diagram is stale
+  // without being told what to do about it is where this stopped being useful:
+  // the findings name the problem, and the reader still has to work out that
+  // anything can be done at all. One line, and it names the command.
+  console.error("\nRun /fix-drift to have it redrawn, or say which boxes no longer belong.");
   process.exit(1);
 }

@@ -153,32 +153,22 @@ function renderDetails(stale, colour) {
 }
 
 /**
- * The notice: the findings themselves when they fit, counts when they do not.
+ * The notice. Small by default, because it fires at the end of every turn.
  *
- * Fitting is judged on the total across every stale diagram, not on how many
- * diagrams there are. Collapsing to counts merely because a second diagram existed
- * threw away detail there was room for, and sent the reader to /expand-report to be
- * shown three lines that would have fitted here.
+ * One stale diagram lists what is wrong with it. Several list themselves with
+ * their counts, and /expand-report is how somebody sees all of it — a command that
+ * shows more once, rather than a mode that has to be switched back off.
  */
 function render(stale, colour) {
   const single = stale.length === 1;
   const found = stale.map((entry) => ({ entry, rows: rowsFor(entry, colour) }));
-  const total = found.reduce((sum, { rows }) => sum + rows.length, 0);
 
-  // Show the findings whenever they fit, however many diagrams they are spread
-  // across. Dropping to counts because there is more than one diagram threw away
-  // detail there was room for, and sent the reader to /expand-report to be told
-  // three things that would have fitted here.
-  if (total <= MAX_LISTED) {
-    return box({
-      sections: found.map(({ entry, rows }) => ({
-        label: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
-        rows,
-      })),
-      foot: "/update-diagram updates the diagram",
-    });
-  }
-
+  // One diagram shows its findings; several show a line each with their counts.
+  //
+  // Listing findings across diagrams was tried and reverted: three findings in two
+  // diagrams became a seven-line box where counts were four, which is the opposite
+  // of what a notice firing every turn should do. The rule is now the simple one —
+  // one diagram, see what is wrong; several, see where.
   const totals = stale.reduce(
     (sum, { report }) => ({
       gone: sum.gone + report.findings.length,

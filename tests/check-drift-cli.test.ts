@@ -474,13 +474,14 @@ describe("--details", () => {
 });
 
 /**
- * When the notice shows findings and when it gives up and counts them.
+ * How much the notice says, which is deliberately not much.
  *
- * The rule is the total across every stale diagram, not the number of diagrams.
- * Collapsing to counts because a second diagram existed threw away detail there
- * was room for.
+ * One diagram lists what is wrong with it; several list themselves with counts.
+ * The alternative — listing findings whenever they fitted — was built, seen, and
+ * reverted: it made the ordinary two-diagram case longer than the counts it
+ * replaced, in a notice that fires at the end of every turn.
  */
-describe("the notice fits what it can", () => {
+describe("how much the notice says", () => {
   let project: string;
 
   async function notice() {
@@ -514,17 +515,17 @@ describe("the notice fits what it can", () => {
     await writeBoard(path.join(project, `docs/diagrams/${name}.excalidraw`), drawn);
   }
 
-  it("lists findings from two diagrams when together they fit", async () => {
+  it("counts a second diagram rather than listing its findings", async () => {
     await board("alpha", 2);
     await board("beta", 2);
     const message = await notice();
-    // Four findings across two diagrams: shown, not counted.
-    expect(message).toContain("ALPHA0 →");
-    expect(message).toContain("BETA1 →");
-    // One frame, joined by a divider rather than stacked.
-    expect((message.match(/┌/g) ?? []).length).toBe(1);
-    expect((message.match(/├/g) ?? []).length).toBe(1);
-    expect(message).not.toContain("expand-report");
+    // Four findings across two diagrams would fit, and are still not listed: a
+    // notice firing every turn stays short, and /expand-report is there for the
+    // rest. Listing them was tried, and made the common case longer.
+    expect(message).not.toContain("ALPHA0 →");
+    expect(message).toContain("alpha.excalidraw");
+    expect(message).toContain("beta.excalidraw");
+    expect(message).toContain("/expand-report");
   }, 180_000);
 
   it("falls back to counts, and points at the fuller view, when they do not", async () => {

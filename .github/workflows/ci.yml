@@ -1,11 +1,16 @@
-# Builds the repo from nothing on every push. `npm ci` runs the postinstall
-# (build-vendor + build:viewer), so this fails if a file the build needs was
-# never committed — the bug that made a clean clone unbuildable and went
-# unnoticed because nothing but a developer's warm working tree ever built it.
+# Builds the repo from nothing and exercises it in a real browser.
+#
+# `npm ci` runs the prepare script (vendor bundle, viewer, out/cli), so this fails
+# if a file the build needs was never committed — the bug that made a clean clone
+# unbuildable and went unnoticed because nothing but a developer's warm working
+# tree ever built it.
 name: CI
 
+# Push is filtered to main on purpose. Unfiltered, a pull request from a branch in
+# this repo triggers both events and every check runs twice.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -22,5 +27,21 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Chromium, or the render tests skip themselves and the live-board run
+      # cannot start. Without this CI was green while three tests never ran at
+      # all — a pass that measured nothing, which is worse than a failure.
+      - name: Cache Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+
       - run: npm run typecheck
       - run: npm test
+
+      # The live board, in a real browser: file to canvas and back. The status
+      # pill and the side-by-side board isolation are only covered here, so
+      # without this step both could break with the suite still green.
+      - run: npm run test:e2e:board

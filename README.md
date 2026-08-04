@@ -162,6 +162,16 @@ npm run check:drift docs/diagrams/architecture.excalidraw
 Silent when nothing has drifted, exit 1 with a report when a node points at a
 file or symbol that is gone — which is what CI and pre-commit want.
 
+When something has drifted, `/fix-drift` redraws it: Claude re-runs the check,
+repoints the boxes whose code moved, removes the ones whose code is gone, and
+tells you which was which. It asks rather than guesses about hand-drawn boxes,
+whose refs were inferred from their labels.
+
+Nothing is fixed automatically. The check reports and stops there, because a
+diagram silently rewritten every turn is worse than one you know is stale —
+regeneration lays the generated part out fresh, so a board someone arranged by
+hand comes back arranged by the engine.
+
 `.claude/settings.json` here also runs it at the end of every turn. To do the
 same in your own project, add this to its `.claude/settings.json`:
 

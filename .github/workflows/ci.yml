@@ -17,11 +17,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # The floor from package.json engines, not the latest node: if the
       # declared minimum cannot build, the declaration is wrong.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22.19.0"
           cache: npm
@@ -32,7 +32,7 @@ jobs:
       # cannot start. Without this CI was green while three tests never ran at
       # all — a pass that measured nothing, which is worse than a failure.
       - name: Cache Chromium
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "diagram-driven-development",
+  "description": "Excalidraw diagrams that live in the repo, drawn and read by Claude.",
+  "owner": {
+    "name": "Noel Matero",
+    "url": "https://github.com/NoelMatero"
+  },
+  "plugins": [
+    {
+      "name": "board",
+      "source": "./",
+      "description": "Diagram-driven development: Claude draws Excalidraw diagrams into your repo, reads them back as a graph, and writes code from them. Includes a live local board you can draw on at the same time.",
+      "category": "documentation",
+      "tags": ["diagram", "excalidraw", "architecture", "mcp"]
+    }
+  ]
+}

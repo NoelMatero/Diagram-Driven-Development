@@ -300,8 +300,14 @@ export async function createDiagram(
   }
 
   const customData = new Map<string, Record<string, unknown>>();
+  // Refs are recorded rather than derived from the label, so drift detection
+  // compares against what the caller meant instead of guessing at a word.
+  const refByNode = new Map(
+    params.nodes.filter((node) => node.ref?.trim()).map((node) => [node.id, node.ref!.trim()]),
+  );
   for (const [nodeId, elementId] of plan.elementIdByNode) {
-    customData.set(elementId, { node: nodeId });
+    const ref = refByNode.get(nodeId);
+    customData.set(elementId, ref ? { node: nodeId, ref } : { node: nodeId });
   }
   (params.edges ?? []).forEach((edge, index) => {
     customData.set(`${prefix}-edge-${index}`, { edge: { from: edge.from, to: edge.to } });

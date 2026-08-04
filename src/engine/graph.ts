@@ -31,6 +31,12 @@ export interface RecoveredNode {
   width: number;
   height: number;
   provenance: Provenance;
+  /**
+   * What this node claims to stand for in the repository: a repo-relative path,
+   * or `path#symbol`. Only ever present on recorded nodes, and only when the
+   * caller supplied one; drift detection compares it against the working tree.
+   */
+  ref?: string;
 }
 
 export interface RecoveredEdge {
@@ -149,6 +155,7 @@ export function readGraph(board: BoardFile): RecoveredGraph {
     const custom = customOf(shape);
     const recordedId = typeof custom.node === "string" ? custom.node : undefined;
     const id = recordedId ?? shape.id;
+    const ref = typeof custom.ref === "string" && custom.ref.trim() ? custom.ref.trim() : undefined;
     const bounds = box(shape);
     nodes.push({
       id,
@@ -160,6 +167,7 @@ export function readGraph(board: BoardFile): RecoveredGraph {
       width: bounds.width,
       height: bounds.height,
       provenance: recordedId ? "recorded" : "inferred",
+      ...(ref ? { ref } : {}),
     });
     nodeIdByElement.set(shape.id, id);
     consumed.add(shape.id);

@@ -1,0 +1,3124 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "board-ai",
+  "elements": [
+    {
+      "id": "ims-volte-architecture-title",
+      "type": "text",
+      "x": 0,
+      "y": -115,
+      "width": 310.08,
+      "height": 30,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a0",
+      "roundness": null,
+      "seed": 659457009,
+      "version": 1,
+      "versionNonce": 608443515,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "role": "title"
+      },
+      "text": "IMS / VoLTE Architecture",
+      "fontSize": 24,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "containerId": null,
+      "originalText": "IMS / VoLTE Architecture",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-0",
+      "type": "rectangle",
+      "x": 20,
+      "y": 520,
+      "width": 180,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "#e7f5ff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a1",
+      "roundness": {
+        "type": 3
+      },
+      "seed": 2040304344,
+      "version": 1,
+      "versionNonce": 1512705204,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-0-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-0",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-7",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "ue"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-1",
+      "type": "rectangle",
+      "x": 540,
+      "y": 540,
+      "width": 160,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "#e7f5ff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a2",
+      "roundness": {
+        "type": 3
+      },
+      "seed": 696878721,
+      "version": 1,
+      "versionNonce": 1045571019,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-1-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-0",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-1",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-2",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "enb"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-2",
+      "type": "rectangle",
+      "x": 1040,
+      "y": 440,
+      "width": 160,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#f08c00",
+      "backgroundColor": "#fff9db",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a3",
+      "roundness": null,
+      "seed": 1380016374,
+      "version": 1,
+      "versionNonce": 2101050458,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-2-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-1",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-3",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-4",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "mme"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-3",
+      "type": "rectangle",
+      "x": 1540,
+      "y": 540,
+      "width": 160,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#f08c00",
+      "backgroundColor": "#fff9db",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a4",
+      "roundness": null,
+      "seed": 568100231,
+      "version": 1,
+      "versionNonce": 1644714657,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-3-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-2",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-3",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-5",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "sgw"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-4",
+      "type": "rectangle",
+      "x": 2040,
+      "y": 560,
+      "width": 160,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#f08c00",
+      "backgroundColor": "#fff9db",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a5",
+      "roundness": null,
+      "seed": 705348180,
+      "version": 1,
+      "versionNonce": 1143490976,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-4-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-5",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-6",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "pgw"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-5",
+      "type": "rectangle",
+      "x": 3960,
+      "y": 60,
+      "width": 160,
+      "height": 120,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "#f3f0ff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a6",
+      "roundness": {
+        "type": 3
+      },
+      "seed": 1767792685,
+      "version": 1,
+      "versionNonce": 1911516311,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-5-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-4",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-10",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-11",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "hss"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-6",
+      "type": "rectangle",
+      "x": 2560,
+      "y": 520,
+      "width": 160,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a7",
+      "roundness": null,
+      "seed": 518803986,
+      "version": 1,
+      "versionNonce": 976291910,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-6-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-6",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-7",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-8",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "pcscf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-7",
+      "type": "rectangle",
+      "x": 3040,
+      "y": 520,
+      "width": 160,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a8",
+      "roundness": null,
+      "seed": 1283526019,
+      "version": 1,
+      "versionNonce": 189640605,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-7-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-8",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-9",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-10",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "icscf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-8",
+      "type": "rectangle",
+      "x": 3500,
+      "y": 520,
+      "width": 160,
+      "height": 140,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a9",
+      "roundness": null,
+      "seed": 1408686096,
+      "version": 1,
+      "versionNonce": 1379298028,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-8-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-9",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-11",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-12",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-13",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-14",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "scscf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-9",
+      "type": "rectangle",
+      "x": 3960,
+      "y": 580,
+      "width": 300,
+      "height": 100,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "#fff0f6",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aA",
+      "roundness": null,
+      "seed": 679715097,
+      "version": 1,
+      "versionNonce": 976221283,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-9-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-12",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "mmtel"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-10",
+      "type": "rectangle",
+      "x": 3960,
+      "y": 420,
+      "width": 300,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "#fff0f6",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aB",
+      "roundness": null,
+      "seed": 487773949,
+      "version": 1,
+      "versionNonce": 1706375911,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-10-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-13",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "mrf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-11",
+      "type": "rectangle",
+      "x": 4040,
+      "y": 260,
+      "width": 160,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aC",
+      "roundness": null,
+      "seed": 562787428,
+      "version": 1,
+      "versionNonce": 1319303152,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-11-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-14",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-15",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "bgcf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-12",
+      "type": "rectangle",
+      "x": 4560,
+      "y": 260,
+      "width": 160,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aD",
+      "roundness": null,
+      "seed": 952198803,
+      "version": 1,
+      "versionNonce": 859751661,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-12-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-15",
+          "type": "arrow"
+        },
+        {
+          "id": "ims-volte-architecture-edge-16",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "mgcf"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-node-13",
+      "type": "ellipse",
+      "x": 5100,
+      "y": 240,
+      "width": 260,
+      "height": 120,
+      "angle": 0,
+      "strokeColor": "#495057",
+      "backgroundColor": "#f1f3f5",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aE",
+      "roundness": null,
+      "seed": 1683797858,
+      "version": 1,
+      "versionNonce": 1400065878,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "ims-volte-architecture-node-13-label"
+        },
+        {
+          "id": "ims-volte-architecture-edge-16",
+          "type": "arrow"
+        }
+      ],
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "node": "pstn"
+      }
+    },
+    {
+      "id": "ims-volte-architecture-edge-0",
+      "type": "arrow",
+      "x": 192,
+      "y": 593.8,
+      "width": 339.616,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aF",
+      "roundness": null,
+      "seed": 1840179855,
+      "version": 1,
+      "versionNonce": 1639566697,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "ue",
+          "to": "enb"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          339.116,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-0",
+        "focus": 0.4759999999999986,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-1",
+        "focus": -0.0760000000000001,
+        "gap": 8.384000000000015
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-1",
+      "type": "arrow",
+      "x": 691.616,
+      "y": 577.1333333333333,
+      "width": 339.18399999999997,
+      "height": 96.66666666666663,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aG",
+      "roundness": null,
+      "seed": 1663628606,
+      "version": 1,
+      "versionNonce": 435213026,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "enb",
+          "to": "mme"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          -96.66666666666663
+        ],
+        [
+          338.68399999999997,
+          -96.66666666666663
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-1",
+        "focus": -0.2573333333333337,
+        "gap": 8.384000000000015
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-2",
+        "focus": 0.19066666666666676,
+        "gap": 9.200000000000045
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-2",
+      "type": "arrow",
+      "x": 691.616,
+      "y": 610.4666666666666,
+      "width": 852,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aH",
+      "roundness": null,
+      "seed": 1924478569,
+      "version": 1,
+      "versionNonce": 2123218291,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "enb",
+          "to": "sgw"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          851.5,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-1",
+        "focus": 0.4093333333333319,
+        "gap": 8.384000000000015
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-3",
+        "focus": -0.4093333333333329,
+        "gap": 3.6159999999999854
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-3",
+      "type": "arrow",
+      "x": 1190.8,
+      "y": 497.1333333333333,
+      "width": 352.81600000000003,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aI",
+      "roundness": null,
+      "seed": 216208800,
+      "version": 1,
+      "versionNonce": 847311612,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "mme",
+          "to": "sgw"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          244.81600000000003,
+          0
+        ],
+        [
+          244.81600000000003,
+          80
+        ],
+        [
+          352.31600000000003,
+          80
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-2",
+        "focus": 0.1426666666666673,
+        "gap": 9.200000000000045
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-3",
+        "focus": 0.25733333333333264,
+        "gap": 3.6159999999999854
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-4",
+      "type": "arrow",
+      "x": 1190.8,
+      "y": 463.8,
+      "width": 2771.5519999999997,
+      "height": 379,
+      "angle": 0,
+      "strokeColor": "#f08c00",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aJ",
+      "roundness": null,
+      "seed": 405218923,
+      "version": 1,
+      "versionNonce": 1311870821,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "mme",
+          "to": "hss"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          -379
+        ],
+        [
+          2663.5519999999997,
+          -379
+        ],
+        [
+          2663.5519999999997,
+          -368
+        ],
+        [
+          2771.0519999999997,
+          -368
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-2",
+        "focus": -0.5240000000000005,
+        "gap": 9.200000000000045
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-5",
+        "focus": 0.403333333333335,
+        "gap": 2.3519999999998618
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-5",
+      "type": "arrow",
+      "x": 1703.616,
+      "y": 593.8,
+      "width": 328.94399999999996,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aK",
+      "roundness": null,
+      "seed": 1141625050,
+      "version": 1,
+      "versionNonce": 1647401646,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "sgw",
+          "to": "pgw"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          328.44399999999996,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-3",
+        "focus": 0.07599999999999908,
+        "gap": 3.6159999999999854
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-4",
+        "focus": 0.15500000000000114,
+        "gap": 7.440000000000055
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-6",
+      "type": "arrow",
+      "x": 2192.56,
+      "y": 593.8,
+      "width": 374.36799999999994,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aL",
+      "roundness": null,
+      "seed": 2082639029,
+      "version": 1,
+      "versionNonce": 1508858431,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "pgw",
+          "to": "pcscf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          373.86799999999994,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-4",
+        "focus": -0.15500000000000114,
+        "gap": 7.440000000000055
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-6",
+        "focus": -0.47599999999999903,
+        "gap": 6.927999999999884
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-7",
+      "type": "arrow",
+      "x": 192,
+      "y": 560.4666666666667,
+      "width": 2374.928,
+      "height": 548.4666666666667,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aM",
+      "roundness": null,
+      "seed": 1731394204,
+      "version": 1,
+      "versionNonce": 1220778152,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "ue",
+          "to": "pcscf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          -548.4666666666667
+        ],
+        [
+          2266.928,
+          -548.4666666666667
+        ],
+        [
+          2266.928,
+          0
+        ],
+        [
+          2374.428,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-0",
+        "focus": -0.19066666666666648,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-6",
+        "focus": 0.1906666666666685,
+        "gap": 6.927999999999884
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-8",
+      "type": "arrow",
+      "x": 2726.928,
+      "y": 577.1333333333333,
+      "width": 303.34400000000005,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aN",
+      "roundness": null,
+      "seed": 1918233943,
+      "version": 1,
+      "versionNonce": 668075313,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "pcscf",
+          "to": "icscf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          302.84400000000005,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-6",
+        "focus": 0.1426666666666673,
+        "gap": 6.927999999999884
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-7",
+        "focus": -0.1426666666666673,
+        "gap": 9.728000000000065
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-9",
+      "type": "arrow",
+      "x": 3190.272,
+      "y": 593.8,
+      "width": 303.34400000000005,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aO",
+      "roundness": null,
+      "seed": 611893382,
+      "version": 1,
+      "versionNonce": 394139370,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "icscf",
+          "to": "scscf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          302.84400000000005,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-7",
+        "focus": 0.47599999999999903,
+        "gap": 9.728000000000065
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-8",
+        "focus": -0.0542857142857141,
+        "gap": 6.3840000000000146
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-10",
+      "type": "arrow",
+      "x": 3190.272,
+      "y": 560.4666666666667,
+      "width": 772.0799999999999,
+      "height": 434.6666666666667,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aP",
+      "roundness": null,
+      "seed": 1796543664,
+      "version": 1,
+      "versionNonce": 1829424652,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "icscf",
+          "to": "hss"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          -434.6666666666667
+        ],
+        [
+          771.5799999999999,
+          -434.6666666666667
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-7",
+        "focus": -0.1906666666666685,
+        "gap": 9.728000000000065
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-5",
+        "focus": -0.09666666666666494,
+        "gap": 2.3519999999998618
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-11",
+      "type": "arrow",
+      "x": 3653.616,
+      "y": 551.8,
+      "width": 308.7359999999999,
+      "height": 395.99999999999994,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aQ",
+      "roundness": null,
+      "seed": 323338041,
+      "version": 1,
+      "versionNonce": 21507,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "scscf",
+          "to": "hss"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          32,
+          0
+        ],
+        [
+          32,
+          -302.79999999999995
+        ],
+        [
+          200.73599999999988,
+          -302.79999999999995
+        ],
+        [
+          200.73599999999988,
+          -395.99999999999994
+        ],
+        [
+          308.2359999999999,
+          -395.99999999999994
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-8",
+        "focus": -0.5457142857142858,
+        "gap": 6.3840000000000146
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-5",
+        "focus": -0.5966666666666651,
+        "gap": 2.027295385942984
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-12",
+      "type": "arrow",
+      "x": 3653.616,
+      "y": 635.8,
+      "width": 308.7359999999999,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aR",
+      "roundness": null,
+      "seed": 391251150,
+      "version": 1,
+      "versionNonce": 1485729906,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "scscf",
+          "to": "mmtel"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          308.2359999999999,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-8",
+        "focus": 0.6542857142857141,
+        "gap": 6.3840000000000146
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-9",
+        "focus": -0.11599999999999772,
+        "gap": 2.3519999999998618
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-13",
+      "type": "arrow",
+      "x": 3653.616,
+      "y": 607.8,
+      "width": 308.7359999999999,
+      "height": 141.99999999999994,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aS",
+      "roundness": null,
+      "seed": 199366623,
+      "version": 1,
+      "versionNonce": 523433849,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "scscf",
+          "to": "mrf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          80,
+          0
+        ],
+        [
+          80,
+          -141.99999999999994
+        ],
+        [
+          308.2359999999999,
+          -141.99999999999994
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-8",
+        "focus": 0.25428571428571406,
+        "gap": 6.3840000000000146
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-10",
+        "focus": -0.14500000000000002,
+        "gap": 2.3519999999998618
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-14",
+      "type": "arrow",
+      "x": 3653.616,
+      "y": 579.8,
+      "width": 378.7359999999999,
+      "height": 273.99999999999994,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aT",
+      "roundness": null,
+      "seed": 121711916,
+      "version": 1,
+      "versionNonce": 114987896,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "scscf",
+          "to": "bgcf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          56,
+          0
+        ],
+        [
+          56,
+          -273.99999999999994
+        ],
+        [
+          378.2359999999999,
+          -273.99999999999994
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-8",
+        "focus": -0.1457142857142859,
+        "gap": 6.3840000000000146
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-11",
+        "focus": -0.14500000000000368,
+        "gap": 7.648000000000138
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-15",
+      "type": "arrow",
+      "x": 4192.352,
+      "y": 305.8,
+      "width": 367.5039999999999,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aU",
+      "roundness": null,
+      "seed": 686058565,
+      "version": 1,
+      "versionNonce": 2090926671,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "bgcf",
+          "to": "mgcf"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          367.0039999999999,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-11",
+        "focus": 0.14500000000000368,
+        "gap": 7.648000000000138
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-12",
+        "focus": -0.14500000000000368,
+        "gap": 1
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edge-16",
+      "type": "arrow",
+      "x": 4719.856,
+      "y": 305.8,
+      "width": 371.85599999999977,
+      "height": 0,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aV",
+      "roundness": null,
+      "seed": 1677522410,
+      "version": 1,
+      "versionNonce": 337724094,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edge": {
+          "from": "mgcf",
+          "to": "pstn"
+        }
+      },
+      "points": [
+        [
+          0.5,
+          0
+        ],
+        [
+          371.35599999999977,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "ims-volte-architecture-node-12",
+        "focus": 0.14500000000000368,
+        "gap": 1
+      },
+      "endBinding": {
+        "elementId": "ims-volte-architecture-node-13",
+        "focus": -0.09666666666666632,
+        "gap": 8.750719036694212
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-0",
+      "type": "text",
+      "x": 332,
+      "y": 604.8,
+      "width": 59.616,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aW",
+      "roundness": null,
+      "seed": 647333623,
+      "version": 1,
+      "versionNonce": 464610897,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-0"
+      },
+      "text": "LTE-Uu",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "LTE-Uu",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-1",
+      "type": "text",
+      "x": 831.616,
+      "y": 491.4666666666667,
+      "width": 59.184,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aX",
+      "roundness": null,
+      "seed": 1914838182,
+      "version": 1,
+      "versionNonce": 533529482,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-1"
+      },
+      "text": "S1-MME",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "S1-MME",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-2",
+      "type": "text",
+      "x": 1093.28,
+      "y": 621.4666666666667,
+      "width": 35.04,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aY",
+      "roundness": null,
+      "seed": 776215281,
+      "version": 1,
+      "versionNonce": 417386875,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-2"
+      },
+      "text": "S1-U",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "S1-U",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-3",
+      "type": "text",
+      "x": 1355.3999999999999,
+      "y": 508.1333333333333,
+      "width": 23.616,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aZ",
+      "roundness": null,
+      "seed": 97027016,
+      "version": 1,
+      "versionNonce": 462172452,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-3"
+      },
+      "text": "S11",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "S11",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-4",
+      "type": "text",
+      "x": 2632.2239999999997,
+      "y": 53,
+      "width": 29.408,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#f08c00",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aa",
+      "roundness": null,
+      "seed": 1393993523,
+      "version": 1,
+      "versionNonce": 83407629,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-4"
+      },
+      "text": "S6a",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "S6a",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-5",
+      "type": "text",
+      "x": 1843.616,
+      "y": 604.8,
+      "width": 48.944,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ab",
+      "roundness": null,
+      "seed": 2127393410,
+      "version": 1,
+      "versionNonce": 1008256246,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-5"
+      },
+      "text": "S5/S8",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "S5/S8",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-6",
+      "type": "text",
+      "x": 2332.56,
+      "y": 604.8,
+      "width": 94.368,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ac",
+      "roundness": null,
+      "seed": 187134877,
+      "version": 1,
+      "versionNonce": 271017479,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-6"
+      },
+      "text": "SGi (bearer)",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "SGi (bearer)",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-7",
+      "type": "text",
+      "x": 1330.8,
+      "y": 23,
+      "width": 72.816,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ad",
+      "roundness": null,
+      "seed": 1985277700,
+      "version": 1,
+      "versionNonce": 2073005072,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-7"
+      },
+      "text": "SIP (Gm)",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "SIP (Gm)",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-8",
+      "type": "text",
+      "x": 2866.928,
+      "y": 588.1333333333333,
+      "width": 23.344,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ae",
+      "roundness": null,
+      "seed": 995744175,
+      "version": 1,
+      "versionNonce": 56033801,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-8"
+      },
+      "text": "Mw",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Mw",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-9",
+      "type": "text",
+      "x": 3330.272,
+      "y": 604.8,
+      "width": 23.344,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "af",
+      "roundness": null,
+      "seed": 1603100254,
+      "version": 1,
+      "versionNonce": 1658075010,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-9"
+      },
+      "text": "Mw",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Mw",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-10",
+      "type": "text",
+      "x": 3563.8559999999998,
+      "y": 136.8,
+      "width": 19.52,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ag",
+      "roundness": null,
+      "seed": 646973160,
+      "version": 1,
+      "versionNonce": 321179332,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-10"
+      },
+      "text": "Cx",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Cx",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-11",
+      "type": "text",
+      "x": 3798.224,
+      "y": 260,
+      "width": 19.52,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ah",
+      "roundness": null,
+      "seed": 1324154257,
+      "version": 1,
+      "versionNonce": 2081022875,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-11"
+      },
+      "text": "Cx",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Cx",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-12",
+      "type": "text",
+      "x": 3793.616,
+      "y": 646.8,
+      "width": 28.736,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ai",
+      "roundness": null,
+      "seed": 1254515526,
+      "version": 1,
+      "versionNonce": 133101226,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-12"
+      },
+      "text": "ISC",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "ISC",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-13",
+      "type": "text",
+      "x": 3798.56,
+      "y": 476.8,
+      "width": 18.848,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aj",
+      "roundness": null,
+      "seed": 1197279767,
+      "version": 1,
+      "versionNonce": 789755121,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-13"
+      },
+      "text": "Mr",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Mr",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-14",
+      "type": "text",
+      "x": 3799.904,
+      "y": 316.8,
+      "width": 16.16,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ak",
+      "roundness": null,
+      "seed": 1088390948,
+      "version": 1,
+      "versionNonce": 1185873328,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-14"
+      },
+      "text": "Mi",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Mi",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-15",
+      "type": "text",
+      "x": 4402.352,
+      "y": 316.8,
+      "width": 17.504,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "al",
+      "roundness": null,
+      "seed": 695504317,
+      "version": 1,
+      "versionNonce": 130024359,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-15"
+      },
+      "text": "Mj",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Mj",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-edgelabel-16",
+      "type": "text",
+      "x": 4859.856,
+      "y": 316.8,
+      "width": 91.856,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "am",
+      "roundness": null,
+      "seed": 1466967586,
+      "version": 1,
+      "versionNonce": 607724822,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture",
+        "edgeLabelFor": "ims-volte-architecture-edge-16"
+      },
+      "text": "PSTN trunk",
+      "fontSize": 16,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "PSTN trunk",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-0-label",
+      "type": "text",
+      "x": 72.28999999999999,
+      "y": 545,
+      "width": 75.42,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "an",
+      "roundness": null,
+      "seed": 1992197541,
+      "version": 1,
+      "versionNonce": 720853295,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "UE\n(Phone)",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-0",
+      "originalText": "UE\n(Phone)",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-1-label",
+      "type": "text",
+      "x": 583.28,
+      "y": 577.5,
+      "width": 73.44,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ao",
+      "roundness": null,
+      "seed": 2111420120,
+      "version": 1,
+      "versionNonce": 107591860,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "eNodeB",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-1",
+      "originalText": "eNodeB",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-2-label",
+      "type": "text",
+      "x": 1097.61,
+      "y": 477.5,
+      "width": 44.78,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ap",
+      "roundness": null,
+      "seed": 2125563303,
+      "version": 1,
+      "versionNonce": 1700210753,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "MME",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-2",
+      "originalText": "MME",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-3-label",
+      "type": "text",
+      "x": 1594.01,
+      "y": 577.5,
+      "width": 51.980000000000004,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aq",
+      "roundness": null,
+      "seed": 1163653890,
+      "version": 1,
+      "versionNonce": 1315769974,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "S-GW",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-3",
+      "originalText": "S-GW",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-4-label",
+      "type": "text",
+      "x": 2093.25,
+      "y": 587.5,
+      "width": 53.5,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ar",
+      "roundness": null,
+      "seed": 2086461857,
+      "version": 1,
+      "versionNonce": 956564843,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "P-GW",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-4",
+      "originalText": "P-GW",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-5-label",
+      "type": "text",
+      "x": 4021.83,
+      "y": 107.5,
+      "width": 36.339999999999996,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#7048e8",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "as",
+      "roundness": null,
+      "seed": 111729380,
+      "version": 1,
+      "versionNonce": 2079019888,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "HSS",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-5",
+      "originalText": "HSS",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-6-label",
+      "type": "text",
+      "x": 2603.5,
+      "y": 557.5,
+      "width": 73,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "at",
+      "roundness": null,
+      "seed": 1818274867,
+      "version": 1,
+      "versionNonce": 1417581069,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "P-CSCF",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-6",
+      "originalText": "P-CSCF",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-7-label",
+      "type": "text",
+      "x": 3085.03,
+      "y": 557.5,
+      "width": 69.94,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "au",
+      "roundness": null,
+      "seed": 1770971934,
+      "version": 1,
+      "versionNonce": 1982551874,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "I-CSCF",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-7",
+      "originalText": "I-CSCF",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-8-label",
+      "type": "text",
+      "x": 3544.26,
+      "y": 577.5,
+      "width": 71.47999999999999,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "av",
+      "roundness": null,
+      "seed": 1223852269,
+      "version": 1,
+      "versionNonce": 631490647,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "S-CSCF",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-8",
+      "originalText": "S-CSCF",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-9-label",
+      "type": "text",
+      "x": 3997.26,
+      "y": 605,
+      "width": 225.48,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "aw",
+      "roundness": null,
+      "seed": 1491896608,
+      "version": 1,
+      "versionNonce": 1700906364,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "MMTel AS\n(Telephony App Server)",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-9",
+      "originalText": "MMTel AS\n(Telephony App Server)",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-10-label",
+      "type": "text",
+      "x": 4010.25,
+      "y": 435,
+      "width": 199.5,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#c2255c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ax",
+      "roundness": null,
+      "seed": 898147380,
+      "version": 1,
+      "versionNonce": 1644493312,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "MRF\n(Media Resource Fn)",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-10",
+      "originalText": "MRF\n(Media Resource Fn)",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-11-label",
+      "type": "text",
+      "x": 4091.69,
+      "y": 287.5,
+      "width": 56.62,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "ay",
+      "roundness": null,
+      "seed": 1274902129,
+      "version": 1,
+      "versionNonce": 1672207355,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "BGCF",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-11",
+      "originalText": "BGCF",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-12-label",
+      "type": "text",
+      "x": 4611.64,
+      "y": 287.5,
+      "width": 56.72,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "az",
+      "roundness": null,
+      "seed": 1293509486,
+      "version": 1,
+      "versionNonce": 891978642,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "MGCF",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-12",
+      "originalText": "MGCF",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "id": "ims-volte-architecture-node-13-label",
+      "type": "text",
+      "x": 5152.686118445748,
+      "y": 275.07359312880715,
+      "width": 154.78,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#495057",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "b00",
+      "roundness": null,
+      "seed": 1366064835,
+      "version": 1,
+      "versionNonce": 1613568221,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 0,
+      "link": null,
+      "locked": false,
+      "customData": {
+        "origin": "diagram",
+        "diagram": "ims-volte-architecture"
+      },
+      "text": "PSTN /\nOther Networks",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "ims-volte-architecture-node-13",
+      "originalText": "PSTN /\nOther Networks",
+      "autoResize": true,
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

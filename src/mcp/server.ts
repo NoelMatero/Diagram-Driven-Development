@@ -24,6 +24,7 @@ import {
   listDiagrams,
 } from "../engine/diagram";
 import { readGraph } from "../engine/graph";
+import { checkDrift, createWorkspace, DEFAULT_DIAGRAM_DIR, findBoards } from "../engine/drift";
 import { loadConverter } from "../engine/convert";
 import { renderBoardToPng } from "../engine/render";
 import {
@@ -63,12 +64,34 @@ function imageElementId(relativePath: string): string {
   return `img-${slug || "image"}-${digest}`;
 }
 
+/**
+ * Tool results go to a model, not a person, so they are not pretty-printed.
+ * Indentation cost 37% of a read_diagram response on a 24-node board -- pure
+ * whitespace, charged on every call, buying nothing a model needs.
+ */
 function text(value: unknown) {
   return {
     content: [
-      { type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) },
+      { type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value) },
     ],
   };
+}
+
+/**
+ * The fields an element's geometry is actually addressed by.
+ *
+ * A raw Excalidraw element carries 27 keys -- seeds, nonces, fill styles,
+ * roughness, indices -- and dumping them cost ~25k tokens on one 24-node board.
+ * An edit needs position, size, and the colours it might be changing; the rest
+ * is engine bookkeeping the model can neither use nor safely set.
+ */
+function projectElement(element: Record<string, unknown>): Record<string, unknown> {
+  const keep = ["id", "type", "x", "y", "width", "height", "strokeColor", "backgroundColor"];
+  const projected: Record<string, unknown> = {};
+  for (const key of keep) if (element[key] !== undefined) projected[key] = element[key];
+  if (typeof element.text === "string" && element.text) projected.text = element.text;
+  if (typeof element.containerId === "string") projected.containerId = element.containerId;
+  return projected;
 }
 
 function failure(error: unknown) {
@@ -88,25 +111,31 @@ async function guard<T>(run: () => Promise<T>): Promise<T | ReturnType<typeof fa
 }
 
 const nodeSchema = z.object({
-  id: z.string().describe("Stable identifier used by edges and later edits"),
+  id: z.string().describe("Stable id, used by edges and later edits"),
   label: z.string().describe("Text shown inside the shape"),
   shape: z.enum(["rectangle", "ellipse", "diamond"]).optional(),
   backgroundColor: z.string().optional(),
   strokeColor: z.string().optional(),
   rounded: z.boolean().optional(),
+  ref: z
+    .string()
+    .optional()
+    .describe(
+      "What this node stands for in the repo: a path, or path#symbol, e.g. src/engine/layout.ts. "
+      + "Set it when a node is a real file or module so check_drift can tell when it goes stale. "
+      + "Leave it off for anything not in this repository.",
+    ),
 });
 
 const edgeSchema = z.object({
   from: z.string(),
   to: z.string(),
-  label: z.string().optional().describe("One or two words; longer labels crowd the diagram"),
+  label: z.string().optional().describe("One or two words; longer crowds the diagram"),
   strokeColor: z
     .string()
     .optional()
-    .describe(
-      "Arrow and edge-label colour, e.g. #1971c2. Set it here rather than patching arrows "
-      + "afterwards, or the next regenerate reverts them to black.",
-    ),
+    // Set here, not patched afterwards: a regenerate would revert a patch.
+    .describe("Arrow and edge-label colour, e.g. #1971c2. Set it here, not by patching after."),
 });
 
 /**
@@ -172,20 +201,15 @@ const server = new McpServer(
   { name: "board", version: "0.1.0" },
   {
     instructions:
-      "A diagram-driven development board. Diagrams are .excalidraw files in the repo. "
-      + "There is a live web view, but it only exists while a board server is running: call "
-      + "board_status to find out, and open_board to start it or point it at another file. "
-      + "Never give the user a localhost URL you did not get back from open_board or "
-      + "board_status in this session -- an address that answers nothing is worse than none. "
-      + "Prefer open_board over running a shell command; it is idempotent and takes over an "
-      + "existing board rather than starting a second one. "
-      + "A board holds one diagram by default: create_diagram replaces what it generated before, "
-      + "and delete_diagram removes it. "
-      + "Call read_diagram before editing an existing board so you are working from its real "
-      + "contents, and render_diagram when layout or appearance matters -- you can see the image. "
-      + "Nodes you create keep their semantic ids, so later calls can refer to them by id rather "
-      + "than by element. Elements the user drew by hand have no ids and are reported as inferred; "
-      + "treat their drawing as the spec and never redraw it from scratch.",
+      "Diagrams are .excalidraw files in the repo. A board holds one diagram: create_diagram "
+      + "replaces what it generated before and keeps anything drawn by hand; delete_diagram removes "
+      + "one. Read an existing board before editing it. Nodes keep their semantic ids, so refer to "
+      + "them by id later. Hand-drawn elements are reported as inferred: treat them as the spec and "
+      + "never redraw them.\n"
+      + "The live web view exists only while a board server runs. Use open_board to start it or "
+      + "point it elsewhere, board_status to ask whether one is up. Never give the user a localhost "
+      + "URL you did not get back from one of those two in this session; an address that answers "
+      + "nothing is worse than none.",
   },
 );
 
@@ -194,26 +218,24 @@ server.registerTool(
   {
     title: "Create diagram",
     description:
-      "Lay out a graph and write it to a .excalidraw file. Supply semantic nodes and edges, never "
-      + "coordinates: layout, sizing, connector routing, and bindings are automatic. Replaces every "
-      + "diagram previously generated in this file and always preserves elements the user drew by "
-      + "hand, so regenerating after a change is the normal way to update a board. To remove a "
-      + "diagram rather than replace it, call delete_diagram; do not pass a throwaway graph here.",
+      "Lay out a graph into a .excalidraw file. Give nodes and edges, never coordinates: layout, "
+      + "sizing, routing, and bindings are automatic. Replaces every diagram previously generated in "
+      + "this file, keeps hand-drawn elements, so regenerating is the normal way to update a board. "
+      + "Use delete_diagram to remove one, not a throwaway graph.",
     inputSchema: {
-      path: z.string().describe("Board file, e.g. docs/diagrams/architecture.excalidraw"),
+      path: z.string().describe("e.g. docs/diagrams/architecture.excalidraw"),
       title: z.string().optional(),
       nodes: z.array(nodeSchema).min(1),
       edges: z.array(edgeSchema).default([]),
       direction: z.enum(["RIGHT", "DOWN"]).optional().describe("Layout flow; RIGHT by default"),
-      name: z.string().optional().describe("Element id prefix; derived from the title otherwise"),
+      name: z.string().optional().describe("Element id prefix; from the title otherwise"),
       append: z
         .boolean()
         .default(false)
         .describe(
-          "Keep what is already on the board and add this diagram below it. Leave false unless the "
-          + "user asks for two diagrams on one board: appending makes node ids ambiguous across "
-          + "them. Note what false does -- it removes EVERY generated diagram in the file, not just "
-          + "one with a matching name, so on a multi-diagram board regenerating one wipes the rest.",
+          "Add below what is there instead of replacing. Only when the user wants two diagrams in "
+          + "one file; it makes node ids ambiguous across them. False removes EVERY generated "
+          + "diagram here, not just a same-named one.",
         ),
     },
   },
@@ -265,19 +287,40 @@ server.registerTool(
       + "from geometry). Use this to treat a diagram as a specification.",
     inputSchema: {
       path: z.string(),
-      includeElements: z.boolean().default(false).describe("Also return raw element geometry"),
+      geometry: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Add positions and sizes to each node and edge. Off by default because it doubles the "
+          + "response and a question about the graph does not need it; turn it on to fix layout.",
+        ),
+      includeElements: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Also list every element with its position, size, and colours -- what edit_diagram needs "
+          + "to address one. Large on a big board; prefer the node and edge ids above where they "
+          + "will do.",
+        ),
     },
   },
-  async ({ path: boardPath, includeElements }) =>
+  async ({ path: boardPath, geometry, includeElements }) =>
     guard(async () => {
       const file = resolveBoardPath(boardPath);
       const board = await readBoard(file);
       const graph = readGraph(board);
       const inferred = [...graph.nodes, ...graph.edges].filter((item) => item.provenance === "inferred");
       const diagrams = listDiagrams(board);
+      // Geometry is dropped unless asked for. readGraph stays rich because the
+      // engine and its tests want the whole picture; what crosses to the model
+      // is trimmed here, where the cost is paid.
+      const nodes = geometry
+        ? graph.nodes
+        : graph.nodes.map(({ x: _x, y: _y, width: _w, height: _h, ...rest }) => rest);
       return text({
         file: relativeToWorkspace(file),
         ...graph,
+        nodes,
         // Named here so a caller can address a single diagram (delete_diagram,
         // or create_diagram with append) without having to guess its name from
         // element id prefixes.
@@ -285,7 +328,74 @@ server.registerTool(
         summary: `${graph.nodes.length} nodes, ${graph.edges.length} edges`
           + (inferred.length ? `, ${inferred.length} inferred from hand-drawn elements` : ""),
         ...(includeElements
-          ? { elements: board.elements.filter((element) => element.isDeleted !== true) }
+          ? {
+              elements: board.elements
+                .filter((element) => element.isDeleted !== true)
+                .map(projectElement),
+            }
+          : {}),
+      });
+    }),
+);
+
+server.registerTool(
+  "check_drift",
+  {
+    title: "Check drift",
+    description:
+      "Do these diagrams still match the code? Compares each node's ref against the working tree "
+      + "and reports the ones pointing at a file or symbol that is gone. Read-only, and cheap "
+      + "enough to run whenever module structure changes. Nodes without a ref are skipped and "
+      + "hand-drawn ones ignored, so a clean report means nothing checkable disagreed -- not that "
+      + "the diagram is correct.",
+    inputSchema: {
+      path: z
+        .string()
+        .optional()
+        .describe(`One board to check. Omit to check every board in ${DEFAULT_DIAGRAM_DIR}.`),
+    },
+  },
+  async ({ path: boardPath }) =>
+    guard(async () => {
+      const files = boardPath
+        ? [resolveBoardPath(boardPath)]
+        : await findBoards(WORKSPACE_ROOT);
+      if (files.length === 0) {
+        return text({
+          note:
+            `No .excalidraw files in ${DEFAULT_DIAGRAM_DIR}. Pass path to check a board somewhere `
+            + "else.",
+        });
+      }
+
+      const workspace = createWorkspace(WORKSPACE_ROOT);
+      const totals = { checked: 0, skipped: 0, handDrawn: 0 };
+      const findings: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const report = checkDrift(await readBoard(file), workspace);
+        totals.checked += report.checked;
+        totals.skipped += report.skipped;
+        totals.handDrawn += report.handDrawn;
+        // Named per finding rather than grouped: a caller acting on one needs to
+        // know which file to redraw, and flat is cheaper than nesting.
+        for (const finding of report.findings) {
+          findings.push({ board: relativeToWorkspace(file), ...finding });
+        }
+      }
+
+      return text({
+        boards: files.map((file) => relativeToWorkspace(file)),
+        clean: findings.length === 0,
+        findings,
+        ...totals,
+        // "clean: true, checked: 0" reads as a pass when nothing was examined,
+        // so say which it was.
+        ...(totals.checked === 0
+          ? {
+              note:
+                "No node carried a ref, so nothing was compared against the code. Set ref on nodes "
+                + "that stand for a file or module when regenerating these diagrams.",
+            }
           : {}),
       });
     }),
@@ -297,10 +407,14 @@ server.registerTool(
     title: "Render diagram",
     description:
       "Rasterise a board to PNG and return the image, so you can look at the result and judge "
-      + "layout, overlap, and readability directly rather than inferring them from the data.",
+      + "layout, overlap, and readability directly rather than inferring them from the data. "
+      + "One look after the diagram is finished is usually enough; rendering after every tweak "
+      + "costs an image each time.",
     inputSchema: {
       path: z.string(),
-      scale: z.number().min(1).max(3).default(2),
+      // Scale 1 is legible enough to judge layout and overlap, and costs less
+      // than half of scale 2. Raise it only to inspect something specific.
+      scale: z.number().min(1).max(3).default(1),
     },
   },
   async ({ path: boardPath, scale }) =>
@@ -321,9 +435,10 @@ server.registerTool(
   {
     title: "Connect nodes",
     description:
-      "Draw bound arrows between elements that already exist, including ones the user drew by "
-      + "hand. Each end is a semantic node id or an element id. Attachment points are computed on "
-      + "the shape perimeter and the arrows stay attached when shapes move.",
+      "Draw bound arrows between shapes that already exist, hand-drawn ones included. Each end is a "
+      + "node id or an element id; arrows attach to the perimeter and stay attached when shapes "
+      + "move. For a diagram you are generating, pass edges to create_diagram instead so the layout "
+      + "routes them.",
     inputSchema: {
       path: z.string(),
       connections: z
@@ -353,9 +468,8 @@ server.registerTool(
   {
     title: "Edit diagram",
     description:
-      "Patch or delete elements by id, hand-drawn ones included: move, resize, recolor, restyle, "
-      + "or relabel. Deleting a shape removes its bound label too. Read the board first and change "
-      + "only the properties that need to change.",
+      "Patch or delete elements by id, hand-drawn ones included: move, resize, recolour, relabel. "
+      + "Deleting a shape takes its bound label. Read the board first; change only what must change.",
     inputSchema: {
       path: z.string(),
       updates: z
@@ -385,19 +499,15 @@ server.registerTool(
   {
     title: "Delete diagram",
     description:
-      "Remove a generated diagram from a board, or all of them when name is omitted. Elements the "
-      + "user drew by hand are always kept, as are arrows that do not depend on what is removed. "
-      + "This is how you delete a diagram: do not regenerate an empty or throwaway one to do it, "
-      + "and do not enumerate element ids into edit_diagram. Names come from read_diagram.",
+      "Remove a generated diagram, or all of them when name is omitted. Always keeps hand-drawn "
+      + "elements and any arrow that still has both ends. Use this to delete: not a throwaway "
+      + "regenerate, not a list of element ids in edit_diagram.",
     inputSchema: {
       path: z.string(),
       name: z
         .string()
         .optional()
-        .describe(
-          "Diagram to remove, as reported by read_diagram (the element id prefix). Omit to remove "
-          + "every generated diagram in the file, leaving hand-drawn work behind.",
-        ),
+        .describe("As reported by read_diagram. Omit to remove every generated diagram in the file."),
     },
   },
   async ({ path: boardPath, name }) =>
@@ -421,8 +531,8 @@ server.registerTool(
   {
     title: "Place image",
     description:
-      "Put an image file from the workspace onto the board, such as a screenshot of something you "
-      + "built, so it sits next to the diagram that specified it.",
+      "Put an image from the workspace onto the board -- a screenshot of what you built, beside the "
+      + "diagram that specified it. Placing the same file again updates it in place.",
     inputSchema: {
       path: z.string().describe("Board file"),
       image: z.string().describe("Image file in the workspace"),
@@ -533,8 +643,8 @@ server.registerTool(
   {
     title: "Board status",
     description:
-      "Whether a live board is running, which file it is showing, and its URL. Check this before "
-      + "telling the user where to look, and before assuming the live view exists.",
+      "Whether a live board is running, which file it shows, and its URL. Check before telling the "
+      + "user where to look, and before assuming the live view exists.",
     inputSchema: {},
   },
   async () =>
@@ -563,10 +673,9 @@ server.registerTool(
   {
     title: "Open live board",
     description:
-      "Open the board in a live local web page. The page updates the moment any tool writes the "
-      + "file, and anything the user draws is saved straight back to it, so you and the user are "
-      + "editing the same board at the same time. Use this when the user wants to watch or join in; "
-      + "all other tools work whether or not it is open.",
+      "Open the board in a live local page. It updates the moment any tool writes the file, and "
+      + "what the user draws is saved back, so you both edit the same board. Idempotent: it takes "
+      + "over an existing board rather than starting a second one. Prefer it to a shell command.",
     inputSchema: {
       path: z.string(),
       open: z.boolean().default(true).describe("Also launch the system browser"),

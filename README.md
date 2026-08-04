@@ -33,24 +33,40 @@ Claude gets that file as a first-class artifact. It can draw a diagram, read one
 
 **Your drawings are never redrawn.** Generated elements carry a `customData` marker; anything without one is yours. Regeneration replaces only what it made before, and `read_diagram` labels every fact `recorded` (drawn by a tool, exact) or `inferred` (hand-drawn, derived from geometry), so a caller knows what to trust.
 
-## Setup
+## Install
+
+It is a Claude Code plugin. From inside Claude Code:
+
+```
+/plugin marketplace add NoelMatero/Diagram-Driven-Development
+/plugin install board@diagram-driven-development
+```
+
+That brings the ten board tools and a `diagram` skill. Diagrams are written into
+whichever project you are working in, never into the plugin's own directory.
+
+Then just ask: *"Draw how this project works to docs/diagrams/architecture.excalidraw and open the board."*
+
+## Working on the plugin itself
 
 ```bash
-npm install          # also builds the headless Excalidraw bundle and the viewer
+npm install    # builds the headless Excalidraw bundle and the viewer
 npm test
 ```
 
-Register the server with Claude Code — the `.mcp.json` in this repo already does:
+Working inside this repo needs no install: the `.mcp.json` here registers the
+server for this project, so edits to `src/` take effect on the next reconnect.
 
-```json
-{
-  "mcpServers": {
-    "board": { "command": "npx", "args": ["tsx", "src/mcp/server.ts"] }
-  }
-}
+To exercise the plugin from *another* project without waiting on a release, link
+it into a skills directory — it loads in place rather than being copied:
+
+```bash
+ln -s "$PWD" ~/.claude/skills/board    # loads as board@skills-dir
 ```
 
-Then ask for what you want: *"Draw how this project works to docs/diagrams/architecture.excalidraw and open the board."*
+A marketplace install copies into a version-pinned cache instead, so bump
+`version` in `.claude-plugin/plugin.json` to ship an update; without a bump,
+existing users stay on the version they have.
 
 ## Tools
 
@@ -60,6 +76,7 @@ Then ask for what you want: *"Draw how this project works to docs/diagrams/archi
 | `read_diagram` | Read a board back as a graph, with provenance on every fact. |
 | `edit_diagram` | Patch or delete elements by id, hand-drawn ones included. |
 | `delete_diagram` | Remove a named diagram, keeping hand-drawn work. |
+| `check_drift` | Report nodes pointing at code that no longer exists. |
 | `connect_nodes` | Draw bound arrows between existing shapes, including ones you drew. |
 | `render_diagram` | Rasterise to PNG, so the model can look at what it made. |
 | `place_image` | Put an image on the board, beside the diagram that specified it. |
@@ -98,4 +115,39 @@ src/server/   the live board: HTTP, SSE, file watching, conflict handling
 src/viewer/   the browser page and the sync loop behind it
 ```
 
-Planned: drift detection, so a diagram that no longer matches the code says so. Design in [docs/drift-check.md](docs/drift-check.md).
+## Keeping a diagram honest
+
+A node can record what it stands for — `ref: "src/engine/layout.ts"`, or
+`path#symbol` — and `check_drift` compares those claims against the working tree:
+
+```bash
+npm run check:drift                    # every board in docs/diagrams
+npm run check:drift docs/diagrams/architecture.excalidraw
+```
+
+Silent when nothing has drifted, exit 1 with a report when a node points at a
+file or symbol that is gone — which is what CI and pre-commit want.
+
+`.claude/settings.json` here also runs it at the end of every turn. To do the
+same in your own project, add this to its `.claude/settings.json`, pointing at
+wherever you cloned this repo:
+
+```json
+{ "hooks": { "Stop": [{ "matcher": "*", "hooks": [
+  { "type": "command", "command": "npx tsx /abs/path/to/board/scripts/check-drift.mjs" }
+] }] } }
+```
+
+Claude Code prefixes the report with `Stop hook error: Failed`, because the script
+exits non-zero. Nothing is broken when you see that — it is the only channel that
+shows up at all; exiting 0 with the report on stdout is silently discarded. The
+path has to be absolute, because `${CLAUDE_PLUGIN_ROOT}` is only substituted in
+configuration the plugin itself provides, not in yours. The plugin does not
+install this hook for you either, because a project with no diagrams should not
+pay for a subprocess on every turn.
+
+Deliberately shallow: existence only, no import graph, no model. Nodes without a
+`ref` are skipped rather than guessed at and hand-drawn boxes are ignored
+entirely, so a clean report means nothing checkable disagreed — not that the
+diagram is correct. Remaining design, including edge mismatches, in
+[docs/drift-check.md](docs/drift-check.md).

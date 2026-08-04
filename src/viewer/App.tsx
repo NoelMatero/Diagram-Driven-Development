@@ -3,6 +3,7 @@ import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BoardSync, type BoardPayload, type SyncStatus } from "./sync";
+import { planReveal, prefersReducedMotion } from "./reveal";
 
 const STATUS_LABEL: Record<SyncStatus, string> = {
   connecting: "connecting",
@@ -38,11 +39,17 @@ export default function App() {
   const [file, setFile] = useState<string>();
 
   // Suppresses the onChange that our own updateScene triggers, so applying a
-  // remote board does not immediately bounce back as a local save.
+  // remote board does not immediately bounce back as a local save. It stays set
+  // for the whole staggered reveal: a half-revealed scene must never be written
+  // to the file, and every frame of the reveal fires onChange.
   const applyingRemote = useRef(false);
   // Frame the board once on open. Re-fitting on every remote update would
   // yank the viewport out from under someone who has scrolled somewhere.
   const framed = useRef(false);
+  // Timer for the reveal in progress, so a board arriving mid-reveal can cancel
+  // it. Without this the outgoing animation's later frames would land on top of
+  // the newer scene and put the old diagram back.
+  const revealTimer = useRef<number | undefined>(undefined);
 
   const sync = useMemo(
     () =>
@@ -51,33 +58,53 @@ export default function App() {
           const api = apiRef.current;
           if (!api) return;
           if (meta.file) setFile(meta.file);
+          if (revealTimer.current !== undefined) window.clearTimeout(revealTimer.current);
           applyingRemote.current = true;
-          try {
-            const files = Object.values(board.files ?? {});
-            if (files.length) api.addFiles(files as Parameters<ExcalidrawImperativeAPI["addFiles"]>[0]);
-            const elements = board.elements as unknown as NonNullable<
-              Parameters<ExcalidrawImperativeAPI["updateScene"]>[0]["elements"]
-            >;
-            api.updateScene({ elements });
+
+          const files = Object.values(board.files ?? {});
+          if (files.length) api.addFiles(files as Parameters<ExcalidrawImperativeAPI["addFiles"]>[0]);
+          type SceneElements = NonNullable<
+            Parameters<ExcalidrawImperativeAPI["updateScene"]>[0]["elements"]
+          >;
+          const elements = board.elements as unknown as SceneElements;
+
+          // Only a wholesale scene is worth drawing on: an ordinary addition is
+          // already a small visible change, and staggering it would delay a
+          // couple of elements for no gain.
+          const stagger = meta.wholesale && !prefersReducedMotion();
+          const { frames, intervalMs } = stagger
+            ? planReveal(board.elements)
+            : { frames: [board.elements], intervalMs: 0 };
+
+          // Frame against the finished diagram, not the first frame, so the
+          // viewport is settled before anything is drawn into it and the reveal
+          // does not walk the view across the canvas.
+          if (elements.length > 0 && (!framed.current || meta.wholesale)) {
+            framed.current = true;
+            api.scrollToContent(elements, { fitToContent: true, animate: false });
+          }
+
+          const settle = () => {
             // Read the scene back: updateScene re-stamps versions, so the file's
             // own numbers are not what the canvas now holds.
-            sync.markApplied(
-              api.getSceneElements() as unknown as Array<Record<string, unknown>>,
-            );
-            // Reframe on first load, and whenever the scene is replaced
-            // outright -- the old viewport says nothing about where the new
-            // content sits. Ordinary additions leave the view untouched.
-            if (elements.length > 0 && (!framed.current || meta.wholesale)) {
-              framed.current = true;
-              api.scrollToContent(elements, { fitToContent: true, animate: false });
-            }
-          } finally {
-            // updateScene notifies listeners synchronously; release on the
-            // next tick so the resulting onChange is the one we skip.
+            sync.markApplied(api.getSceneElements() as unknown as Array<Record<string, unknown>>);
+            // updateScene notifies listeners synchronously; release on the next
+            // tick so the resulting onChange is the one we skip.
             setTimeout(() => {
               applyingRemote.current = false;
             }, 0);
-          }
+          };
+
+          const showFrame = (index: number) => {
+            api.updateScene({ elements: frames[index] as unknown as SceneElements });
+            if (index === frames.length - 1) {
+              revealTimer.current = undefined;
+              settle();
+              return;
+            }
+            revealTimer.current = window.setTimeout(() => showFrame(index + 1), intervalMs);
+          };
+          showFrame(0);
         },
         onStatus: (next, why) => {
           setStatus(next);
@@ -89,7 +116,10 @@ export default function App() {
 
   useEffect(() => {
     void sync.start();
-    return () => sync.stop();
+    return () => {
+      if (revealTimer.current !== undefined) window.clearTimeout(revealTimer.current);
+      sync.stop();
+    };
   }, [sync]);
 
   const onChange = useCallback(
@@ -124,6 +154,9 @@ export default function App() {
             return {
               count: elements.length,
               ids: elements.map((element) => element.id),
+              // Lets a test wait for the reveal to finish instead of sleeping a
+              // guessed number of milliseconds and hoping.
+              revealing: revealTimer.current !== undefined,
             };
           };
         }}

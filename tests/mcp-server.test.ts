@@ -4,7 +4,7 @@
  * schemas, serialisation, or path handling break, these fail.
  */
 import { mkdtempSync, rmSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -57,6 +57,7 @@ describe("board MCP server", () => {
     expect(names).toEqual(
       [
         "board_status",
+        "check_drift",
         "connect_nodes",
         "create_diagram",
         "delete_diagram",
@@ -251,6 +252,78 @@ describe("board MCP server", () => {
   }, 120_000);
 
   /**
+   * The end-to-end path that matters for drift: a ref given to create_diagram
+   * has to survive the schema, land in customData, come back from read_diagram,
+   * and be what check_drift compares against the real working tree.
+   */
+  it("carries a node's ref through to check_drift", async () => {
+    const board = "refs.excalidraw";
+    await writeFile(path.join(workspace, "kept.ts"), "export function keptSymbol() {}\n");
+    await call("create_diagram", {
+      path: board,
+      nodes: [
+        { id: "kept", label: "Kept", ref: "kept.ts" },
+        { id: "symbol", label: "Symbol", ref: "kept.ts#keptSymbol" },
+        { id: "plain", label: "No ref here" },
+      ],
+    });
+
+    const graph = jsonOf(await call("read_diagram", { path: board }));
+    const refs = (graph.nodes as Array<{ id: string; ref?: string }>).map((node) => node.ref);
+    expect(refs).toEqual(["kept.ts", "kept.ts#keptSymbol", undefined]);
+
+    const clean = jsonOf(await call("check_drift", { path: board }));
+    expect(clean).toMatchObject({ clean: true, checked: 2, skipped: 1 });
+    expect(clean.note).toBeUndefined();
+
+    rmSync(path.join(workspace, "kept.ts"));
+    const drifted = jsonOf(await call("check_drift", { path: board }));
+    expect(drifted.clean).toBe(false);
+    expect((drifted.findings as Array<{ node: string }>).map((finding) => finding.node)).toEqual([
+      "kept",
+      "symbol",
+    ]);
+    // Every finding names its own board, because a project holds several and a
+    // caller has to know which file to redraw.
+    expect((drifted.findings as Array<{ board: string }>).every((f) => f.board === board)).toBe(true);
+  }, 120_000);
+
+  /**
+   * No diagram is "current": a project holds as many as it likes, and checking
+   * means checking all of them unless one is named.
+   */
+  it("checks every diagram at once when no path is given", async () => {
+    const dir = path.join(workspace, "docs", "diagrams");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(workspace, "present.ts"), "export const present = 1;\n");
+    await call("create_diagram", {
+      path: "docs/diagrams/one.excalidraw",
+      nodes: [{ id: "a", label: "Here", ref: "present.ts" }],
+    });
+    await call("create_diagram", {
+      path: "docs/diagrams/two.excalidraw",
+      nodes: [{ id: "b", label: "Gone", ref: "never-existed.ts" }],
+    });
+
+    const report = jsonOf(await call("check_drift", {}));
+    expect(report.boards).toEqual(["docs/diagrams/one.excalidraw", "docs/diagrams/two.excalidraw"]);
+    expect(report.clean).toBe(false);
+    // Only the second board is stale, and the report says which.
+    expect(report.findings).toHaveLength(1);
+    expect(report.findings).toMatchObject([{ board: "docs/diagrams/two.excalidraw", node: "b" }]);
+    expect(report.checked).toBe(2);
+  }, 120_000);
+
+  it("says when a clean report checked nothing at all", async () => {
+    const board = "no-refs.excalidraw";
+    await call("create_diagram", { path: board, nodes: [{ id: "a", label: "Auth" }] });
+    const report = jsonOf(await call("check_drift", { path: board }));
+    // "clean: true" over zero comparisons would otherwise read as a pass.
+    expect(report).toMatchObject({ clean: true, checked: 0 });
+    expect(report.note).toMatch(/No node carried a ref/);
+  }, 120_000);
+
+  /**
    * Two images whose names sanitise to the same string used to land on the same
    * element id and overwrite each other in board.files, and re-placing one
    * appended a second element carrying an id the first already had.
@@ -285,6 +358,45 @@ describe("board MCP server", () => {
     expect(Object.keys(parsed.files)).toEqual(expect.arrayContaining(ids));
     // Re-placing must not drag the image back to where it was first put.
     expect(images.find((element) => element.id === first.elementId)).toMatchObject({ x: 500, y: 700 });
+  }, 120_000);
+
+  /**
+   * Tool results are charged to a context window, and the defaults are what a
+   * model pays without asking. A raw element dump ran to ~25k tokens on one
+   * 24-node board, most of it seeds, nonces and fill styles nothing can use.
+   */
+  it("keeps read_diagram lean by default and opt-in when detail is wanted", async () => {
+    const board = "cost.excalidraw";
+    const nodes = Array.from({ length: 20 }, (_, index) => ({ id: `n${index}`, label: `Node ${index}` }));
+    await call("create_diagram", {
+      path: board,
+      title: "Cost",
+      nodes,
+      edges: nodes.slice(1).map((node, index) => ({ from: nodes[index].id, to: node.id, label: "to" })),
+    });
+
+    const lean = textOf(await call("read_diagram", { path: board }));
+    const withGeometry = textOf(await call("read_diagram", { path: board, geometry: true }));
+    const withElements = textOf(await call("read_diagram", { path: board, includeElements: true }));
+
+    // Not pretty-printed: indentation was over a third of the response.
+    expect(lean).not.toContain("\n");
+    // Geometry is real detail, so it must cost something and be off by default.
+    expect(withGeometry.length).toBeGreaterThan(lean.length);
+    const leanNodes = (JSON.parse(lean) as { nodes: Array<Record<string, unknown>> }).nodes;
+    expect(leanNodes[0]).not.toHaveProperty("x");
+    expect(leanNodes[0]).toHaveProperty("elementId");
+    expect(
+      (JSON.parse(withGeometry) as { nodes: Array<Record<string, unknown>> }).nodes[0],
+    ).toHaveProperty("x");
+
+    // Elements are projected to what an edit addresses, not dumped raw.
+    const elements = (JSON.parse(withElements) as { elements: Array<Record<string, unknown>> }).elements;
+    expect(elements.length).toBeGreaterThan(20);
+    for (const key of ["seed", "versionNonce", "roughness", "groupIds", "customData"]) {
+      expect(elements[0], key).not.toHaveProperty(key);
+    }
+    expect(elements[0]).toMatchObject({ id: expect.any(String), type: expect.any(String) });
   }, 120_000);
 
   it("returns an error result rather than crashing on a bad graph", async () => {

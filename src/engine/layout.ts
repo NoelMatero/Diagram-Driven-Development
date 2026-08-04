@@ -22,6 +22,11 @@ export type GraphNode = {
   backgroundColor?: string;
   strokeColor?: string;
   rounded?: boolean;
+  /**
+   * What this node stands for in the repository, for drift detection. Carried
+   * through to customData; layout ignores it.
+   */
+  ref?: string;
 };
 export type GraphEdge = { from: string; to: string; label?: string; strokeColor?: string };
 export type DiagramLayoutOptions = {

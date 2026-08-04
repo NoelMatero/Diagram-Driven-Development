@@ -379,10 +379,93 @@ describe("colour", () => {
     expect(payload.systemMessage).toContain("Old Cache");
   }, 120_000);
 
+  it("survives stdin being /dev/null rather than a pipe", () => {
+    // process.stdin is a socket when piped and an fs stream when redirected from a
+    // file or /dev/null, and only the socket has unref(). Every test here used a
+    // pipe, so a crash on the other shape went unnoticed until a shell ran it.
+    const stdout = execFileSync(TSX, [SCRIPT, "--hook"], {
+      cwd: project,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+    });
+    expect(JSON.parse(stdout).systemMessage).toContain("Old Cache");
+  }, 120_000);
+
   it("starts the notice on its own line, so the harness prefix cannot shift the border", async () => {
     const { stdout } = await run(TSX, [SCRIPT, "--hook"], { cwd: project });
     const payload = JSON.parse(stdout) as { systemMessage: string };
     // "Stop says: ┌───" pushed the top border right by the width of that prefix.
     expect(payload.systemMessage.startsWith("\n")).toBe(true);
   }, 120_000);
+});
+
+/**
+ * The expanded view behind `--details`.
+ *
+ * The notice is trimmed because it fires every turn; this is what someone gets when
+ * they ask. What it must not do is grow a second personality: same rows, same
+ * colours, one box per diagram, nothing capped, and the command once at the bottom.
+ */
+describe("--details", () => {
+  const MANY = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"];
+  let project: string;
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-details-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    mkdirSync(path.join(project, "src"), { recursive: true });
+    for (const name of MANY) {
+      writeFileSync(path.join(project, `src/${name}.ts`), `export const ${name} = 1;\n`);
+    }
+    const { board: first } = await createDiagram(emptyBoard(), {
+      name: "one",
+      nodes: MANY.map((name) => ({ id: name, label: name.toUpperCase(), ref: `src/${name}.ts` })),
+      edges: MANY.slice(1).map((name) => ({ from: "a", to: name })),
+    });
+    await writeBoard(path.join(project, "docs/diagrams/one.excalidraw"), first);
+
+    const { board: second } = await createDiagram(emptyBoard(), {
+      name: "two",
+      nodes: [{ id: "gone", label: "Old Cache", ref: "src/cache.ts" }],
+      edges: [],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/two.excalidraw"), second);
+  }, 180_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  function details() {
+    try {
+      execFileSync(TSX, [SCRIPT, "--details"], { cwd: project, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+      return "";
+    } catch (error) {
+      return (error as { stderr?: string }).stderr ?? "";
+    }
+  }
+
+  it("lists every finding, where the notice would have trimmed to six", () => {
+    const out = details();
+    const arrows = (out.match(/│ A → /g) ?? []).length;
+    expect(arrows).toBe(12);
+    expect(out).not.toContain("more");
+  }, 180_000);
+
+  it("gives each diagram its own box, headed by its own counts", () => {
+    const out = details();
+    expect(out).toContain("one.excalidraw");
+    expect(out).toContain("two.excalidraw");
+    expect(out).toContain("12 arrows");
+    expect(out).toContain("1 gone");
+    // Two boxes, so two top borders.
+    expect((out.match(/┌/g) ?? []).length).toBe(2);
+  }, 180_000);
+
+  it("names the command once, under everything", () => {
+    const out = details();
+    expect((out.match(/\/update-diagram/g) ?? []).length).toBe(1);
+    const lines = out.split("\n").filter(Boolean);
+    expect(lines.at(-1)).toContain("/update-diagram");
+  }, 180_000);
 });

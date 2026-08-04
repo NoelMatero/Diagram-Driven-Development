@@ -42,6 +42,7 @@ function parseArgs() {
   const opts = {
     edges: true,
     hook: false,
+    details: false,
   };
   const boards = [];
 
@@ -50,6 +51,8 @@ function parseArgs() {
       opts.edges = false;
     } else if (arg === "--hook") {
       opts.hook = true;
+    } else if (arg === "--details" || arg === "--full") {
+      opts.details = true;
     } else if (!arg.startsWith("--")) {
       boards.push(arg);
     }
@@ -66,6 +69,20 @@ async function boardsToCheck(boards) {
 function boxName(finding) {
   return (finding.label || finding.node).replace(/\s+/g, " ");
 }
+
+/**
+ * Why a finding is a finding, spelled out.
+ *
+ * Deliberately absent from the notice, which fires every turn and would otherwise
+ * repeat it — and present here, where somebody has asked.
+ */
+const REASONS = {
+  "missing-file": "that file is not in the repo any more",
+  "missing-symbol": "the file is there, that name in it is not",
+  "unresolvable-ref": "that is not a path in this repo at all",
+};
+const EDGE_REASON = "nothing in the code connects them: no import either way, "
+  + "no third file importing both, no shared route string";
 
 /** What a stale box points at. */
 function target(finding) {
@@ -104,8 +121,9 @@ const MAX_LISTED = 6;
  * counts, because listing findings across five diagrams spends the whole notice
  * on the first one.
  */
-function render(stale, colour) {
-  const rowsFor = ({ report }) => [
+/** One finding per row: what the box says, and what it points at. */
+function rowsFor({ report }, colour) {
+  return [
     ...report.findings.map((finding) => paint(`${boxName(finding)} \u2192 ${target(finding)}`, "red", colour)),
     ...report.edges.map((finding) =>
       paint(
@@ -116,12 +134,46 @@ function render(stale, colour) {
       ),
     ),
   ];
+}
 
-  const tally = (gone, arrows) =>
-    [
-      gone ? paint(`${gone} gone`, "red", colour) : "",
-      arrows ? paint(`${arrows} ${arrows === 1 ? "arrow" : "arrows"}`, "yellow", colour) : "",
-    ].filter(Boolean).join("  ");
+/** "2 gone  1 arrow", each part coloured, empty parts dropped. */
+function tallyCounts(gone, arrows, colour) {
+  return [
+    gone ? paint(`${gone} gone`, "red", colour) : "",
+    arrows ? paint(`${arrows} ${arrows === 1 ? "arrow" : "arrows"}`, "yellow", colour) : "",
+  ].filter(Boolean).join("  ");
+}
+
+function tallyFor(report, colour) {
+  return tallyCounts(report.findings.length, report.edges.length, colour);
+}
+
+/**
+ * The long form: the same rows as the notice, one box per diagram, nothing capped.
+ *
+ * No reasons on the rows. The notice is trimmed for brevity, so what is missing
+ * from it is the *findings*, not an explanation of them — and someone who wants
+ * the reasoning can ask, or read docs/drift-check.md. The command sits in the
+ * bottom border of the last box, so it appears once under everything.
+ */
+function renderDetails(stale, colour) {
+  const lines = [];
+  stale.forEach((entry, index) => {
+    const last = index === stale.length - 1;
+    lines.push(
+      ...box({
+        head: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
+        foot: last ? "/update-diagram updates the diagram" : "",
+        rows: rowsFor(entry, colour),
+        max: 72,
+      }),
+    );
+  });
+  return lines;
+}
+
+function render(stale, colour) {
+  const tally = (gone, arrows) => tallyCounts(gone, arrows, colour);
 
   const totals = stale.reduce(
     (sum, { report }) => ({
@@ -139,7 +191,7 @@ function render(stale, colour) {
   const rows = [];
   let hidden = 0;
   if (single) {
-    const found = rowsFor(stale[0]);
+    const found = rowsFor(stale[0], colour);
     rows.push(...found.slice(0, MAX_LISTED));
     hidden = Math.max(0, found.length - MAX_LISTED);
   } else {
@@ -154,7 +206,13 @@ function render(stale, colour) {
     rows.push(paint(`\u2026 and ${hidden} more${single ? "" : " diagrams"}`, "dim", colour));
   }
 
-  return box({ head, foot: "/update-diagram updates the diagram", rows });
+  // The second hint only when something was left out: otherwise it is a longer
+  // border for no reason, every turn.
+  const trimmed = hidden > 0 || !single;
+  const foot = trimmed
+    ? "/update-diagram updates it · /expand-report explains it"
+    : "/update-diagram updates the diagram";
+  return box({ head, foot, rows });
 }
 
 /**
@@ -188,7 +246,10 @@ async function hookOnStdin() {
   // the same way.
   clearTimeout(timer);
   process.stdin.pause();
-  process.stdin.unref();
+  // Only a socket has unref. Redirect stdin from /dev/null and it is an fs stream
+  // instead, where calling it throws — which is how `npm run check:drift` from a
+  // script died while every test, all of which used a pipe, passed.
+  if (typeof process.stdin.unref === "function") process.stdin.unref();
 
   try {
     const payload = JSON.parse(raw);
@@ -225,7 +286,8 @@ if (stale.length > 0 || problems.length > 0) {
   // Measured: ANSI renders in a systemMessage. Off only when the output is being
   // piped or captured, where escapes would be junk in somebody's log.
   const colour = opts.hook || Boolean(process.stderr.isTTY);
-  const lines = [...problems, ...(stale.length > 0 ? render(stale, colour) : [])];
+  const report = opts.details ? renderDetails : render;
+  const lines = [...problems, ...(stale.length > 0 ? report(stale, colour) : [])];
 
   if (opts.hook) {
     process.stdout.write(

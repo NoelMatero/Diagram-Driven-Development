@@ -193,8 +193,21 @@ the counts in red and amber:
 └─ /update-diagram updates the diagram ─────────┘
 ```
 
-Several stale diagrams get a line each with their own counts instead. Without the
-notice channel the report still appears, but wrapped in
+Several stale diagrams get a line each with their own counts instead, and
+`/expand-report` shows every finding, one box per diagram:
+
+```
+┌─ board-internals.excalidraw  1 gone ────────────┐
+│ read back as a graph → src/engine/read-graph.ts │
+└─────────────────────────────────────────────────┘
+┌─ demo-repo.excalidraw  2 gone  1 arrow ────────┐
+│ browser bundle config → vite.browser.config.ts │
+│ font metrics cache → src/engine/font-cache.ts  │
+│ sync loop → PNG render                         │
+└─ /update-diagram updates the diagram ──────────┘
+```
+
+Without the notice channel the report still appears, but wrapped in
 `Stop hook error: Failed with non-blocking status code`, which reads as a broken
 tool rather than a finding. Leave the flag off anywhere an exit code is the point —
 CI, a pre-commit hook — where a non-zero exit is exactly what you want, and where

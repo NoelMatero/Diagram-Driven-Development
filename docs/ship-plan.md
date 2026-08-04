@@ -264,39 +264,43 @@ Also still design-only: "unrepresented" modules — a real folder no box mention
 Needs a relevance threshold or every new file is drift. See
 `docs/drift-check.md` for the full reasoning and open questions.
 
-## Phase 5 — viewer status pill bug
+## Phase 5 — viewer status pill bug — DONE
 
 Reported: after the live page is pointed at a different board, the pill in the
-bottom-right still shows the previous filename and reads `offline`. Example: the
-page was serving `ims_2.excalidraw`, the file became
-`board-internals.excalidraw`, and the pill kept the old name. It also sits on top
-of Excalidraw's help button.
+bottom-right still shows the previous filename and reads `offline`, and it sits on
+top of Excalidraw's help button.
 
-What is known:
+**Reproduced in Chromium first, and the suspect named here was innocent.** For the
+record, because this plan previously pointed at it: the `sync.ts` guard that
+refuses to save a scene sharing no element ids ("That looks like a different
+file") is *not* involved. Measured behaviour of the unfixed code:
 
-- The pill renders `file` in `src/viewer/App.tsx` (`StatusPill`), and `file` is
-  only updated from `meta.file` when a board payload arrives
-  (`onRemoteBoard`, App.tsx ~line 60).
-- So while the connection is down, the pill keeps showing a name that may no
-  longer be true, with nothing to say the name itself is stale.
-- `src/viewer/sync.ts:147` refuses to save a scene sharing no element ids with
-  the loaded board ("That looks like a different file") and sets `offline`. That
-  guard exists to stop Excalidraw's own File > Open from overwriting a board.
-  Whether it also fires when the *server* re-points at another file is
-  **unverified** and is the first thing to establish.
-- Positioning is `.status { position: fixed; right: 14px; bottom: 14px }` in
-  `src/viewer/styles.css`, which is where Excalidraw puts its help button.
+| Scenario | Pill showed | Verdict |
+| --- | --- | --- |
+| Switch to a different board | new name, `live` | already correct |
+| Server killed, replaced on the same port with another board | new name, `live` | already correct |
+| Switch to a board holding *identical* content | **old** name, `live` | bug |
+| Connection lost | old name, `offline` | bug — the reported one |
 
-Work: reproduce first (open a board, re-point the server at another file with
-`open_board`, watch the pill), then decide whether the fix is to have the page
-follow the switch, or to reload, or to say plainly that it is showing a stale
-file. Move the pill so it stops covering the help button either way.
+So "does the browser page follow a switch?" is now answered: yes, and the
+recovery path after a server restart works too. Two real defects, both fixed:
 
-**Related unverified claim.** The server side of switching boards *is* verified by
-reading the code: `open_board` re-points a running board via `live.setFile(file)`,
-or steers another session's via `POST /api/file`, and every write calls
-`followBoard`. Whether the browser page follows that switch was never tested end
-to end. Do not repeat the claim that switching "just works" until it is.
+- **Identical content, different file.** The revision is a hash of the content,
+  so the frame announcing the switch looked like an echo of the page's own save
+  and the pull was skipped. `BoardSync` now tracks the served file alongside the
+  revision and pulls when *either* changes.
+- **A filename presented as fact while disconnected.** The server may have been
+  re-pointed or replaced and the page cannot know, so the name now renders dimmed
+  and italic with a tooltip saying so. This is the reported symptom: the user's
+  page was attached to a server that went away.
+
+The pill moved to `bottom: 62px`. The old position measurably overlapped both the
+help button and the zen-mode exit (pill 1096–1266 × 759–786, help 1228–1264 ×
+748–784 at a 1280×800 viewport).
+
+Three checks added to `npm run test:e2e:board`, all of which fail without the
+change: follows a switch to identical content, marks the filename stale once
+disconnected, does not cover Excalidraw's own controls.
 
 ## How to verify anything in this project
 

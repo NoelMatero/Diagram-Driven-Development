@@ -17,14 +17,19 @@
  * - **A Claude Code Stop hook** wants `--hook`: the report goes out as a
  *   `systemMessage` on stdout and the process exits 0.
  *
- * That second channel was measured rather than assumed, twice. Plain text on
- * stdout with exit 0 is discarded silently. stderr with a non-zero exit shows,
- * but Claude Code wraps it in "Stop hook error: Failed with non-blocking status
- * code", which reads as a broken tool rather than a finding — the check spent
- * its whole life apologising for working. Structured JSON on stdout renders as
- * an ordinary notice, and newlines, indentation, box-drawing characters and
- * symbols all survive it. ANSI colour does not; it is stripped cleanly, so there
- * is no point emitting any.
+ * That second channel was measured rather than assumed, three times. Plain text on
+ * stdout with exit 0 is discarded silently. stderr with a non-zero exit shows, but
+ * Claude Code wraps it in "Stop hook error: Failed with non-blocking status code",
+ * which reads as a broken tool rather than a finding — the check spent its whole
+ * life apologising for working. Structured JSON on stdout renders as an ordinary
+ * notice, and newlines, indentation, box-drawing characters, symbols and ANSI
+ * colour all survive it.
+ *
+ * Colour took two rounds to settle, and the first answer was wrong: escapes were
+ * put in a notice and the reply came back as pasted text, where colour is invisible
+ * either way. It renders. Severity is carried by colour rather than emoji, which
+ * matters beyond looks — an escape occupies no cells, while `⚠️` is ambiguous-width
+ * and sheared every padded row it appeared in.
  *
  * The JSON shape below is the one that was measured. Slimming it is not obviously
  * safe without measuring again.
@@ -92,13 +97,7 @@ function target(finding) {
   return file;
 }
 
-/**
- * Colour, only ever to a real terminal.
- *
- * A Claude Code systemMessage strips ANSI, measured — so in the notice the
- * severity has to be carried by a symbol instead, and emitting escapes there
- * would only risk the padding arithmetic for nothing.
- */
+/** Colour, applied where it renders: a terminal, and the notice. Never a pipe. */
 const COLOUR = { red: "\u001b[31m", yellow: "\u001b[33m", dim: "\u001b[2m", off: "\u001b[0m" };
 function paint(text, colour, enabled) {
   return enabled && colour ? `${COLOUR[colour]}${text}${COLOUR.off}` : String(text);
@@ -107,20 +106,6 @@ function paint(text, colour, enabled) {
 /** Rows of findings. Low on purpose: this fires at the end of every turn. */
 const MAX_LISTED = 6;
 
-/**
- * The report, in as few lines as it can be while still naming what is wrong.
- *
- * Severity is carried by colour, not by symbols. Emoji were used first because
- * ANSI was believed to be stripped from a systemMessage; it is not — measured by
- * putting real escapes in one and looking. Colour is strictly better here: it
- * occupies no cells, so nothing can shear, where `⚠️` is ambiguous-width and
- * sheared every padded row it appeared in.
- *
- * The diagram and its counts ride in the top border, the way out in the bottom.
- * One stale diagram lists its findings; several get a line each with their own
- * counts, because listing findings across five diagrams spends the whole notice
- * on the first one.
- */
 /** One finding per row: what the box says, and what it points at. */
 function rowsFor({ report }, colour) {
   return [
@@ -167,8 +152,32 @@ function renderDetails(stale, colour) {
   });
 }
 
+/**
+ * The notice: the findings themselves when they fit, counts when they do not.
+ *
+ * Fitting is judged on the total across every stale diagram, not on how many
+ * diagrams there are. Collapsing to counts merely because a second diagram existed
+ * threw away detail there was room for, and sent the reader to /expand-report to be
+ * shown three lines that would have fitted here.
+ */
 function render(stale, colour) {
-  const tally = (gone, arrows) => tallyCounts(gone, arrows, colour);
+  const single = stale.length === 1;
+  const found = stale.map((entry) => ({ entry, rows: rowsFor(entry, colour) }));
+  const total = found.reduce((sum, { rows }) => sum + rows.length, 0);
+
+  // Show the findings whenever they fit, however many diagrams they are spread
+  // across. Dropping to counts because there is more than one diagram threw away
+  // detail there was room for, and sent the reader to /expand-report to be told
+  // three things that would have fitted here.
+  if (total <= MAX_LISTED) {
+    return box({
+      sections: found.map(({ entry, rows }) => ({
+        label: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
+        rows,
+      })),
+      foot: "/update-diagram updates the diagram",
+    });
+  }
 
   const totals = stale.reduce(
     (sum, { report }) => ({
@@ -178,22 +187,20 @@ function render(stale, colour) {
     { gone: 0, arrows: 0 },
   );
 
-  const single = stale.length === 1;
+  // Too many to list: counts per diagram, and a pointer to the view that has room.
   const head = single
-    ? `${path.basename(stale[0].file)}  ${tally(totals.gone, totals.arrows)}`
-    : `${stale.length} diagrams out of date  ${tally(totals.gone, totals.arrows)}`;
+    ? `${path.basename(stale[0].file)}  ${tallyCounts(totals.gone, totals.arrows, colour)}`
+    : `${stale.length} diagrams out of date  ${tallyCounts(totals.gone, totals.arrows, colour)}`;
 
   const rows = [];
   let hidden = 0;
   if (single) {
-    const found = rowsFor(stale[0], colour);
-    rows.push(...found.slice(0, MAX_LISTED));
-    hidden = Math.max(0, found.length - MAX_LISTED);
+    rows.push(...found[0].rows.slice(0, MAX_LISTED));
+    hidden = found[0].rows.length - MAX_LISTED;
   } else {
     const widest = Math.min(28, Math.max(...stale.map(({ file }) => path.basename(file).length)));
-    for (const entry of stale.slice(0, MAX_LISTED)) {
-      const label = pad(fit(path.basename(entry.file), widest), widest);
-      rows.push(`${label}  ${tally(entry.report.findings.length, entry.report.edges.length)}`);
+    for (const { entry } of found.slice(0, MAX_LISTED)) {
+      rows.push(`${pad(fit(path.basename(entry.file), widest), widest)}  ${tallyFor(entry.report, colour)}`);
     }
     hidden = Math.max(0, stale.length - MAX_LISTED);
   }
@@ -201,23 +208,9 @@ function render(stale, colour) {
     rows.push(paint(`\u2026 and ${hidden} more${single ? "" : " diagrams"}`, "dim", colour));
   }
 
-  // The second hint only when something was left out: otherwise it is a longer
-  // border for no reason, every turn.
-  const trimmed = hidden > 0 || !single;
-  const foot = trimmed
-    ? "/update-diagram updates it · /expand-report explains it"
-    : "/update-diagram updates the diagram";
-  return box({ head, foot, rows });
+  return box({ head, foot: "/update-diagram updates it · /expand-report shows them all", rows });
 }
 
-/**
- * Is this a hook? Claude Code pipes hook input as JSON on stdin, so the script can
- * tell without being told — and a user who forgets `--hook` gets the notice rather
- * than the "Stop hook error" framing, which is the whole point of the flag.
- *
- * Guarded twice, because hanging is worse than being ugly: a terminal is excluded
- * outright, and anything slower than 200ms falls back to the plain-text path.
- */
 async function hookOnStdin() {
   if (process.stdin.isTTY) return false;
 

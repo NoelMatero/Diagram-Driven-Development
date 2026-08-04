@@ -472,3 +472,67 @@ describe("--details", () => {
     expect(lines.at(-1)).toContain("/update-diagram");
   }, 180_000);
 });
+
+/**
+ * When the notice shows findings and when it gives up and counts them.
+ *
+ * The rule is the total across every stale diagram, not the number of diagrams.
+ * Collapsing to counts because a second diagram existed threw away detail there
+ * was room for.
+ */
+describe("the notice fits what it can", () => {
+  let project: string;
+
+  async function notice() {
+    const stdout = execFileSync(TSX, [SCRIPT, "--hook"], {
+      cwd: project,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+    });
+    return (JSON.parse(stdout) as { systemMessage: string }).systemMessage;
+  }
+
+  beforeAll(() => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-fit-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+  });
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  async function board(name: string, boxes: number) {
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name,
+      nodes: Array.from({ length: boxes }, (_, index) => ({
+        id: `${name}${index}`,
+        label: `${name.toUpperCase()}${index}`,
+        ref: `src/${name}${index}.ts`,
+      })),
+      edges: [],
+    });
+    await writeBoard(path.join(project, `docs/diagrams/${name}.excalidraw`), drawn);
+  }
+
+  it("lists findings from two diagrams when together they fit", async () => {
+    await board("alpha", 2);
+    await board("beta", 2);
+    const message = await notice();
+    // Four findings across two diagrams: shown, not counted.
+    expect(message).toContain("ALPHA0 →");
+    expect(message).toContain("BETA1 →");
+    // One frame, joined by a divider rather than stacked.
+    expect((message.match(/┌/g) ?? []).length).toBe(1);
+    expect((message.match(/├/g) ?? []).length).toBe(1);
+    expect(message).not.toContain("expand-report");
+  }, 180_000);
+
+  it("falls back to counts, and points at the fuller view, when they do not", async () => {
+    await board("gamma", 8);
+    const message = await notice();
+    expect(message).toContain("gamma.excalidraw");
+    expect(message).toContain("/expand-report");
+    // Counts per diagram rather than twelve rows of findings.
+    expect(message).toMatch(/8 gone/);
+  }, 180_000);
+});

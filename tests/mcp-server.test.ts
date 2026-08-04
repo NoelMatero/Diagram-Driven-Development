@@ -3,6 +3,7 @@
  * Code does. Nothing here reaches into the engine directly: if the tool
  * schemas, serialisation, or path handling break, these fail.
  */
+import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -17,6 +18,7 @@ const BOARD = "diagrams/architecture.excalidraw";
 
 let workspace: string;
 let client: Client;
+let boardPort: number;
 
 function textOf(result: unknown): string {
   const content = (result as { content?: Array<{ type: string; text?: string }> }).content ?? [];
@@ -33,15 +35,33 @@ async function call(name: string, args: Record<string, unknown>) {
   return result;
 }
 
+/**
+ * A port nobody is on, claimed by binding and releasing it.
+ *
+ * Without this the server under test uses the default 4747 — and if a real board
+ * is running there, which it is whenever anyone is using this project, the tests
+ * reach out and re-point somebody's live page. It also made `board_status`
+ * ambient: the assertion depended on whether a board happened to be up.
+ */
+async function freePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const port = address && typeof address === "object" ? address.port : 0;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  return port;
+}
+
 beforeAll(async () => {
   workspace = mkdtempSync(path.join(os.tmpdir(), "board-mcp-"));
+  boardPort = await freePort();
   client = new Client({ name: "test", version: "0" });
   await client.connect(
     new StdioClientTransport({
       command: "npx",
       args: ["tsx", path.join(REPO, "src/mcp/server.ts")],
       cwd: REPO,
-      env: { ...process.env, BOARD_MCP_ROOT: workspace },
+      env: { ...process.env, BOARD_MCP_ROOT: workspace, BOARD_PORT: String(boardPort) },
     }),
   );
 }, 120_000);
@@ -419,4 +439,68 @@ describe("board MCP server", () => {
     });
     expect((result as { isError?: boolean }).isError).toBe(true);
   }, 60_000);
+});
+
+/**
+ * The tool layer for boards open side by side.
+ *
+ * The server keeps its boards apart (board-server.test.ts) and two real pages
+ * stay put (the e2e run), but neither covers what Claude is actually handed: a
+ * URL per board. The plugin's own instructions say never to give the user a
+ * localhost address you did not get from these tools, so the addresses these
+ * tools hand out have to answer — and answer with the right diagram. Nothing
+ * checked that, and a pinned URL that quietly serves the wrong board looks
+ * exactly like one that works.
+ */
+describe("open_board with several boards", () => {
+  const alpha = "diagrams/alpha.excalidraw";
+  const beta = "diagrams/beta.excalidraw";
+
+  /** The board a pinned URL actually serves, asked over HTTP. */
+  async function servedBy(pinned: string): Promise<string> {
+    const url = new URL(pinned);
+    const api = new URL("/api/board", url);
+    api.search = url.search;
+    const response = await fetch(api, { cache: "no-store" });
+    if (!response.ok) throw new Error(`${api.href} -> ${response.status}`);
+    return path.basename(((await response.json()) as { file: string }).file);
+  }
+
+  let alphaUrl: string;
+
+  it("hands back a URL pinned to the board it opened, and it serves that board", async () => {
+    await call("create_diagram", { path: alpha, title: "Alpha", nodes: [{ id: "a", label: "Alpha node" }] });
+    const opened = jsonOf(await call("open_board", { path: alpha, open: false }));
+    alphaUrl = String(opened.url);
+
+    expect(alphaUrl).toContain("?file=");
+    expect(opened.file).toBe(alpha);
+    expect(await servedBy(alphaUrl)).toBe("alpha.excalidraw");
+  }, 120_000);
+
+  it("opening a second board does not move the first one's URL", async () => {
+    await call("create_diagram", { path: beta, title: "Beta", nodes: [{ id: "b", label: "Beta node" }] });
+    const opened = jsonOf(await call("open_board", { path: beta, open: false }));
+    const betaUrl = String(opened.url);
+
+    expect(betaUrl).not.toBe(alphaUrl);
+    expect(await servedBy(betaUrl)).toBe("beta.excalidraw");
+    // The whole point: the first address still means what it meant.
+    expect(await servedBy(alphaUrl)).toBe("alpha.excalidraw");
+  }, 120_000);
+
+  it("board_status lists every open board with its own address", async () => {
+    const status = jsonOf(await call("board_status", {}));
+    expect(status.running).toBe(true);
+
+    const boards = status.boards as Array<{ file: string; url: string }>;
+    expect(boards.map((board) => board.file).sort()).toEqual([alpha, beta].sort());
+    for (const board of boards) {
+      expect(path.basename(board.file)).toBe(await servedBy(board.url));
+    }
+
+    // The bare page follows the last board opened; the pinned ones do not.
+    expect(String(status.followUrl)).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+    expect(status.showing).toBe(beta);
+  }, 120_000);
 });

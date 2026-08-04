@@ -137,21 +137,49 @@ copied by hand.
 
 ## Phase 2 — make the plugin work when installed
 
-**Open decision, the user has not chosen yet.** Ask before implementing.
+**Decided: publish to npm.** The plugin's `mcpServers` command is
+`npx -y board-ai@<version>`, pinned to the plugin version so a version-cached
+plugin install cannot pick up a newer server. Rejected: committing ~51 MB of
+build output per rebuild into git, and bootstrapping dependencies on first run
+(silent, slow, offline-hostile).
 
-1. **Publish to npm** (recommended). Plugin's MCP command becomes
-   `npx -y <package>`; npm resolves dependencies, and `prepublishOnly` builds the
-   vendor bundle and viewer into the published files. This is the normal shape for
-   an MCP server and the reason `npx` based ones work for everyone. Cost: a
-   package to publish and a version bump per release.
-2. **Commit the build output.** Works with no install step, but ~13 MB of
-   generated files in git that must be rebuilt and re-committed whenever a
-   dependency changes.
-3. **Bootstrap on first run.** Server installs its own dependencies on first
-   start. Works, but a silent 30s network operation on first use is unpleasant and
-   fails offline.
+The published package is JS, not TypeScript: `scripts/build-cli.mjs` bundles
+`src/mcp/server.ts` and `scripts/check-drift.mjs` into `out/cli/` with
+dependencies left external. `prepare` (not `postinstall`) builds, so a consumer
+installing the tarball never runs a build it has no tools for.
 
-Whatever is chosen, the acceptance test is the same and must be run for real:
+**Measured while doing this — do not re-derive:**
+
+- **Bundling changes how three modules find their assets.** `convert.ts`,
+  `render.ts` and `board-server.ts` each resolve `../..` from their own file to
+  reach `vendor/` and `out/viewer`. A bundle collapses all three onto one file, so
+  the output's *depth* is that calculation. `out/cli/` is two levels down for
+  exactly this reason and `build-cli.mjs` asserts it. Moving it breaks rendering
+  and the live board at runtime, silently.
+- **`elkjs/lib/elk.bundled` had no file extension.** tsx and vite guess it; plain
+  Node ESM does not, so only the built server failed —
+  `ERR_MODULE_NOT_FOUND`. Now `.js`. Any other extensionless deep import will
+  behave the same way.
+- **Two runtime dependencies were declared dev-only**: `fontkit`
+  (`src/engine/diagram.ts` → `font.ts`, every `create_diagram`) and Playwright.
+  A published package would have failed on both — and the fontkit path fails
+  *silently*, substituting `length × fontSize × 0.55` and sizing every box wrong.
+- **npm hoists dependencies to a sibling of the package**, so
+  `render.ts`'s `ROOT/node_modules/@excalidraw/...` does not exist in an install.
+  Now resolved via `require.resolve`, the same way `font.ts` already did it.
+- **Playwright ships as `playwright-core`** (no browser download) and
+  `render_diagram` asks for Chromium at the point of use. Full `playwright` as a
+  dependency would download ~150 MB before the server could start, which reads as
+  a hang and can time out the MCP handshake. The install command must be
+  version-pinned: playwright-core only runs the browser revision it was built
+  against.
+- **`files` in package.json beats `.gitignore`** — `out/` and `vendor/` are
+  gitignored and still ship. Verified with `npm pack --dry-run`: 441 files,
+  23.2 MB packed, 53.4 MB unpacked.
+- **`tests/packaged-server.test.ts` drives the built bundle**, because every
+  failure above is invisible to a test that runs from source.
+
+The acceptance test, which must be run for real:
 install the plugin into a *different* project from a marketplace entry (not a
 symlink into this repo — a symlink has this repo's `node_modules` and will pass
 misleadingly), then in that project draw a diagram, read it back, render it, and

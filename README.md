@@ -35,6 +35,11 @@ Claude gets that file as a first-class artifact. It can draw a diagram, read one
 
 ## Install
 
+> **Not yet.** A marketplace install copies files without installing
+> dependencies or running the build, so the server does not start. Tracked in
+> [docs/ship-plan.md](docs/ship-plan.md) — phase 2. Working inside this repo is
+> fine; see below.
+
 It is a Claude Code plugin. From inside Claude Code:
 
 ```

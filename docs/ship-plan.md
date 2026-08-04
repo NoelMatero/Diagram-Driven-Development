@@ -164,9 +164,23 @@ installing the tarball never runs a build it has no tools for.
   (`src/engine/diagram.ts` → `font.ts`, every `create_diagram`) and Playwright.
   A published package would have failed on both — and the fontkit path fails
   *silently*, substituting `length × fontSize × 0.55` and sizing every box wrong.
-- **npm hoists dependencies to a sibling of the package**, so
-  `render.ts`'s `ROOT/node_modules/@excalidraw/...` does not exist in an install.
-  Now resolved via `require.resolve`, the same way `font.ts` already did it.
+- **`@excalidraw/excalidraw` cannot be a runtime dependency.** With it in
+  `dependencies`, `npm install <tarball>` of this package does not converge: its
+  own dependency list pins UI packages whose React peer ranges stop at 18 while it
+  accepts 19, and npm oscillates. Measured twice — 703 re-placements of React in
+  27 minutes, then 2079 in 7 minutes after moving React itself to
+  devDependencies. It is a devDependency now and the install takes **3 seconds**.
+  Do not put it back to "fix" a path problem; fix the path.
+- **All it was needed for at runtime is font files, and those already ship.** A
+  render was traced requesting exactly two paths: `/excalidraw-browser.js` and one
+  file under `/fonts/`. No chunks, no locales, no subset workers. `out/viewer/fonts`
+  is already published for the live board, so `src/engine/excalidraw-assets.ts`
+  points both the metrics path and the render origin at it — zero added bytes.
+  Verified by a render before and after: 261 KB PNG either way.
+- **npm hoists dependencies to a sibling of the installed package**, so any
+  `ROOT/node_modules/<dep>` path is wrong in an install. That was the first
+  attempt at the above and it worked, but it kept the dependency; prefer not
+  needing the package at all.
 - **Playwright ships as `playwright-core`** (no browser download) and
   `render_diagram` asks for Chromium at the point of use. Full `playwright` as a
   dependency would download ~150 MB before the server could start, which reads as
@@ -179,16 +193,31 @@ installing the tarball never runs a build it has no tools for.
 - **`tests/packaged-server.test.ts` drives the built bundle**, because every
   failure above is invisible to a test that runs from source.
 
-The acceptance test, which must be run for real:
-install the plugin into a *different* project from a marketplace entry (not a
-symlink into this repo — a symlink has this repo's `node_modules` and will pass
-misleadingly), then in that project draw a diagram, read it back, render it, and
-open the live board. Use a throwaway `CLAUDE_CONFIG_DIR` so the user's real
-config is never touched, and verify afterwards that it wasn't.
+**Run so far.** `npm pack` then `npm install <tarball>` into an empty project
+unrelated to this repo (never a symlink — a symlink borrows this repo's
+`node_modules` and passes misleadingly), then driving the installed
+`node_modules/.bin/board-ai` over stdio. 9/9: server starts and lists 11 tools,
+`create_diagram` writes a file, `read_diagram` returns the graph, `check_drift`
+catches a box pointing at a deleted file, `render_diagram` returns a real 30 KB
+PNG, `open_board` serves the viewer page *and* its built bundle over HTTP,
+`board_status` sees the running board. The missing-Chromium path was checked
+separately with `PLAYWRIGHT_BROWSERS_PATH` pointed at an empty directory: it
+prints the version-pinned install command instead of failing.
 
-Also in this phase: the README currently documents
-`/plugin marketplace add ...` as working. Until phase 2 lands, that instruction
-is false. Either fix it or mark it clearly.
+**Still unverified, and the last link in the chain**: installing through
+`/plugin marketplace add` in Claude Code, i.e. that the plugin manifest registers
+the server and `${CLAUDE_PROJECT_DIR}` reaches it as `BOARD_MCP_ROOT`. Cannot be
+tested end to end until `board-ai` is on npm, because the manifest pins
+`npx -y board-ai@0.1.0`. Use a throwaway `CLAUDE_CONFIG_DIR` when doing it, and
+verify afterwards that the real config was untouched.
+
+**Publishing is the user's to run** — the account is theirs and `npm whoami`
+reports nobody logged in:
+
+```bash
+npm login
+npm publish        # `prepare` builds vendor, viewer and out/cli first
+```
 
 ## Phase 3 — optional auto-fix after drift
 

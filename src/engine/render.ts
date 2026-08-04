@@ -15,27 +15,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { BoardFile } from "./board-file";
+import { excalidrawFontsDir } from "./excalidraw-assets";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BROWSER_BUNDLE = path.join(ROOT, "vendor/excalidraw-browser.js");
 const ORIGIN = "http://board.local";
-
-/**
- * Resolved through node rather than joined onto ROOT: when this package is a
- * dependency, npm hoists @excalidraw/excalidraw to a *sibling* of it, so
- * `ROOT/node_modules/...` does not exist and every font 404s — text then
- * rasterises in a fallback face. Same approach as findFontDir in ./font.ts.
- */
-function excalidrawDist(): string {
-  try {
-    const require = createRequire(import.meta.url);
-    return path.join(path.dirname(require.resolve("@excalidraw/excalidraw/package.json")), "dist/prod");
-  } catch {
-    return path.join(ROOT, "node_modules/@excalidraw/excalidraw/dist/prod");
-  }
-}
-
-const EXCALIDRAW_DIST = excalidrawDist();
 
 /**
  * playwright-core carries no browser download, so installing this package stays
@@ -110,11 +94,23 @@ export async function renderBoardToPng(board: BoardFile, options: RenderOptions 
           body: "<!doctype html><html><head><meta charset=utf-8></head><body></body></html>",
         });
       }
-      const file = url.pathname === "/excalidraw-browser.js"
-        ? BROWSER_BUNDLE
-        : path.join(EXCALIDRAW_DIST, url.pathname.replace(/^\/+/, ""));
-      // Never let a crafted path escape the asset roots.
-      if (file !== BROWSER_BUNDLE && !file.startsWith(`${EXCALIDRAW_DIST}${path.sep}`)) {
+      if (url.pathname === "/excalidraw-browser.js") {
+        return route.fulfill({
+          body: await readFile(BROWSER_BUNDLE),
+          contentType: "text/javascript",
+        });
+      }
+
+      // Fonts are the only other thing the page asks for — traced, and the
+      // reason @excalidraw/excalidraw need not be installed at runtime. Anything
+      // else is not something this render has ever needed.
+      const fonts = excalidrawFontsDir();
+      const match = /^\/fonts\/(.+)$/.exec(url.pathname);
+      if (!fonts || !match) return route.fulfill({ status: 404, body: "not found" });
+
+      const file = path.join(fonts, match[1]);
+      // Never let a crafted path escape the asset root.
+      if (!file.startsWith(`${fonts}${path.sep}`)) {
         return route.fulfill({ status: 403, body: "forbidden" });
       }
       try {

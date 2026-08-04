@@ -45,6 +45,12 @@ It is a Claude Code plugin. From inside Claude Code:
 That brings the ten board tools and a `diagram` skill. Diagrams are written into
 whichever project you are working in, never into the plugin's own directory.
 
+The server itself comes from npm (`npx -y board-ai`), which npm fetches once and
+caches — the first session after installing takes a few seconds longer to
+connect. Exporting a PNG additionally needs a headless browser; `render_diagram`
+prints the one command to install it the first time you ask for one. Nothing else
+does.
+
 Then just ask: *"Draw how this project works to docs/diagrams/architecture.excalidraw and open the board."*
 
 ## Working on the plugin itself
@@ -67,6 +73,23 @@ ln -s "$PWD" ~/.claude/skills/board    # loads as board@skills-dir
 A marketplace install copies into a version-pinned cache instead, so bump
 `version` in `.claude-plugin/plugin.json` to ship an update; without a bump,
 existing users stay on the version they have.
+
+### Releasing
+
+Three things move together, and a release is broken if they disagree: `version`
+in `package.json`, `version` in `.claude-plugin/plugin.json`, and the pinned
+`board-ai@x.y.z` that plugin's `mcpServers` command runs.
+
+```bash
+npm version patch                      # or minor / major
+# match the new version in .claude-plugin/plugin.json: "version" and the npx arg
+npm publish                            # `prepare` builds the bundles and viewer first
+git push --follow-tags
+```
+
+The pin is deliberate. A plugin install is cached by version, so an unpinned
+`npx -y board-ai` would hand an old plugin a newer server on some future morning
+with nothing in the release notes to explain it.
 
 ## Tools
 
@@ -129,22 +152,23 @@ Silent when nothing has drifted, exit 1 with a report when a node points at a
 file or symbol that is gone — which is what CI and pre-commit want.
 
 `.claude/settings.json` here also runs it at the end of every turn. To do the
-same in your own project, add this to its `.claude/settings.json`, pointing at
-wherever you cloned this repo:
+same in your own project, add this to its `.claude/settings.json`:
 
 ```json
 { "hooks": { "Stop": [{ "matcher": "*", "hooks": [
-  { "type": "command", "command": "npx tsx /abs/path/to/board/scripts/check-drift.mjs" }
+  { "type": "command", "command": "npx -y -p board-ai@0.1.0 board-drift" }
 ] }] } }
 ```
 
 Claude Code prefixes the report with `Stop hook error: Failed`, because the script
 exits non-zero. Nothing is broken when you see that — it is the only channel that
-shows up at all; exiting 0 with the report on stdout is silently discarded. The
-path has to be absolute, because `${CLAUDE_PLUGIN_ROOT}` is only substituted in
-configuration the plugin itself provides, not in yours. The plugin does not
-install this hook for you either, because a project with no diagrams should not
-pay for a subprocess on every turn.
+shows up at all; exiting 0 with the report on stdout is silently discarded. Point
+it at a clone instead (`npx tsx /abs/path/to/board/scripts/check-drift.mjs`) if
+you are working on this repo; either way the path cannot use
+`${CLAUDE_PLUGIN_ROOT}`, which is only substituted in configuration the plugin
+itself provides, not in yours. The plugin does not install this hook for you
+either, because a project with no diagrams should not pay for a subprocess on
+every turn.
 
 Deliberately shallow: existence only, no import graph, no model. Nodes without a
 `ref` are skipped rather than guessed at and hand-drawn boxes are ignored

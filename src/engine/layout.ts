@@ -6,7 +6,10 @@
  * never overflows the box drawn for it. Callers supply meaning (nodes, edges,
  * labels) and never coordinates.
  */
-import ELK from "elkjs/lib/elk.bundled";
+// Extension required: elkjs predates package exports, so this is a raw file path
+// and plain Node ESM will not guess the `.js`. tsx and vite resolve it either way,
+// which is why the built server was the only place this broke.
+import ELK from "elkjs/lib/elk.bundled.js";
 import { readableInk } from "./contrast";
 import type { ElkExtendedEdge, ElkNode } from "elkjs/lib/elk-api";
 

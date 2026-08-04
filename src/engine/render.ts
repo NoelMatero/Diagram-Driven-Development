@@ -10,15 +10,49 @@
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { BoardFile } from "./board-file";
+import { excalidrawFontsDir } from "./excalidraw-assets";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BROWSER_BUNDLE = path.join(ROOT, "vendor/excalidraw-browser.js");
-const EXCALIDRAW_DIST = path.join(ROOT, "node_modules/@excalidraw/excalidraw/dist/prod");
 const ORIGIN = "http://board.local";
+
+/**
+ * playwright-core carries no browser download, so installing this package stays
+ * a few seconds rather than ~150 MB. Rendering is the only feature that needs
+ * Chromium, so it asks for it at the point of use instead of at install time.
+ */
+async function launchChromium() {
+  const { chromium } = await import("playwright-core");
+  try {
+    return await chromium.launch();
+  } catch (error) {
+    const message = String(error);
+    if (!/Executable doesn't exist|Failed to launch|browserType.launch/i.test(message)) throw error;
+    // Version-pinned: playwright-core only runs the browser revision it was
+    // built against, and a bare `playwright install` fetches whatever is latest.
+    const version = await playwrightVersion();
+    throw new Error(
+      "Rendering a PNG needs a headless browser, which is not installed yet. Run:\n"
+        + `  npx playwright@${version} install chromium\n`
+        + "Drawing, reading and the live board all work without it.",
+    );
+  }
+}
+
+async function playwrightVersion(): Promise<string> {
+  try {
+    const require = createRequire(import.meta.url);
+    const manifest = require.resolve("playwright-core/package.json");
+    return JSON.parse(await readFile(manifest, "utf8")).version as string;
+  } catch {
+    return "latest";
+  }
+}
 
 const MIME_BY_EXT: Record<string, string> = {
   ".js": "text/javascript",
@@ -46,8 +80,7 @@ export async function renderBoardToPng(board: BoardFile, options: RenderOptions 
     throw new Error(`Missing ${path.relative(ROOT, BROWSER_BUNDLE)}. Run \`npm run build:vendor\`.`);
   }
 
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch();
+  const browser = await launchChromium();
   try {
     const page = await browser.newPage();
 
@@ -61,11 +94,23 @@ export async function renderBoardToPng(board: BoardFile, options: RenderOptions 
           body: "<!doctype html><html><head><meta charset=utf-8></head><body></body></html>",
         });
       }
-      const file = url.pathname === "/excalidraw-browser.js"
-        ? BROWSER_BUNDLE
-        : path.join(EXCALIDRAW_DIST, url.pathname.replace(/^\/+/, ""));
-      // Never let a crafted path escape the asset roots.
-      if (file !== BROWSER_BUNDLE && !file.startsWith(`${EXCALIDRAW_DIST}${path.sep}`)) {
+      if (url.pathname === "/excalidraw-browser.js") {
+        return route.fulfill({
+          body: await readFile(BROWSER_BUNDLE),
+          contentType: "text/javascript",
+        });
+      }
+
+      // Fonts are the only other thing the page asks for — traced, and the
+      // reason @excalidraw/excalidraw need not be installed at runtime. Anything
+      // else is not something this render has ever needed.
+      const fonts = excalidrawFontsDir();
+      const match = /^\/fonts\/(.+)$/.exec(url.pathname);
+      if (!fonts || !match) return route.fulfill({ status: 404, body: "not found" });
+
+      const file = path.join(fonts, match[1]);
+      // Never let a crafted path escape the asset root.
+      if (!file.startsWith(`${fonts}${path.sep}`)) {
         return route.fulfill({ status: 403, body: "forbidden" });
       }
       try {

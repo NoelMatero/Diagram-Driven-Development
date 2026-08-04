@@ -186,6 +186,40 @@ try {
     `${diskIds.size} ids on disk, expected ${revealTotal}`,
   );
 
+  // 5. The status pill has to name the board actually being served, and stop
+  //    claiming to when it cannot know. Both failed before: a switch between two
+  //    files holding identical content left the old name in place reading `live`,
+  //    because the revision is a content hash and the page skipped the pull.
+  const pillText = () => page.$eval(".status", (el) => el.textContent.replace(/\s+/g, " ").trim());
+  const twin = path.join(workspace, "twin.excalidraw");
+  await writeBoard(twin, await readBoard(file));
+
+  await server.setFile(twin);
+  await page.waitForFunction(() => document.querySelector(".status")?.textContent?.includes("twin"), undefined, {
+    timeout: 8000,
+  }).catch(() => undefined);
+  check("pill follows a switch to a board with identical content", (await pillText()).includes("twin.excalidraw"), await pillText());
+
+  // The pill must not present a filename as current once the connection is gone:
+  // the server may have been re-pointed or replaced, and the page cannot tell.
+  await server.close();
+  await page.waitForFunction(() => document.querySelector(".status-file-stale") !== null, undefined, {
+    timeout: 10_000,
+  }).catch(() => undefined);
+  check("pill marks the filename stale once disconnected", await page.$eval(".status", (el) => el.querySelector(".status-file-stale") !== null), await pillText());
+
+  // Excalidraw owns the bottom-right corner: the Help button and the zen-mode
+  // exit both live there, and the pill used to sit on top of them.
+  const overlapping = await page.evaluate(() => {
+    const rect = (el) => el.getBoundingClientRect();
+    const hit = (a, b) => a.x < b.right && b.x < a.right && a.y < b.bottom && b.y < a.bottom;
+    const pill = rect(document.querySelector(".status"));
+    return [...document.querySelectorAll("button, .help-icon")]
+      .filter((el) => rect(el).width > 0 && hit(pill, rect(el)))
+      .map((el) => el.getAttribute("aria-label") ?? el.className.toString().slice(0, 30));
+  });
+  check("pill does not cover Excalidraw's own controls", overlapping.length === 0, overlapping.join(", "));
+
   check("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
   console.log(
     `\nscreenshots: ${shot("1-initial")}  ${shot("2-after-replacement")}  ${shot("3-after-reveal")}`,

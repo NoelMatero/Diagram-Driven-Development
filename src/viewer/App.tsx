@@ -12,6 +12,8 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
   offline: "offline",
 };
 
+const STALE_NOTE = "Not connected — this may no longer be the board being served.";
+
 function StatusPill({
   status,
   detail,
@@ -21,12 +23,23 @@ function StatusPill({
   detail?: string;
   file?: string;
 }) {
+  // The filename only means anything while the connection is up. With it down,
+  // the server may have been pointed at another board, or replaced entirely, and
+  // the page has no way to know: it is reporting the last thing it was told, so
+  // it has to look like that rather than like fact.
+  const stale = status === "offline" && Boolean(file);
+  const title = stale
+    ? `${file} — ${STALE_NOTE}${detail ? ` (${detail})` : ""}`
+    : detail ?? file ?? "";
+
   return (
-    <div className={`status status-${status}`} title={detail ?? file ?? ""}>
+    <div className={`status status-${status}`} title={title}>
       <span className="status-dot" />
       {/* Which board this is showing. Without it, a page pointed at another
           file looks identical to one that simply is not updating. */}
-      {file ? <span className="status-file">{file.split("/").pop()}</span> : null}
+      {file ? (
+        <span className={`status-file${stale ? " status-file-stale" : ""}`}>{file.split("/").pop()}</span>
+      ) : null}
       {STATUS_LABEL[status]}
     </div>
   );

@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm --silent run check:drift",
+            "command": "npm --silent run check:drift -- --hook",
             "timeout": 30
           }
         ]

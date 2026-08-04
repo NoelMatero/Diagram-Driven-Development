@@ -217,7 +217,9 @@ describe("a report with many findings stays readable", () => {
     expect(stderr).toContain("12 arrows");
     expect(stderr).toMatch(/… and \d+ more/);
     // The count in the heading is what makes trimming honest rather than hiding.
-    const listed = (stderr.match(/^ {4}A → /gm) ?? []).length;
+    // Arrow lines are indented under their heading; the exact indent is the
+    // format's business, the count is the contract.
+    const listed = (stderr.match(/^\s+A\s+→\s+\S/gm) ?? []).length;
     const hidden = Number(/… and (\d+) more/.exec(stderr)?.[1] ?? 0);
     expect(listed + hidden).toBe(12);
   });
@@ -226,4 +228,80 @@ describe("a report with many findings stays readable", () => {
     // The old format spent 2360 characters on this exact case.
     expect(stderr.length).toBeLessThan(800);
   });
+});
+
+/**
+ * The Stop hook channel.
+ *
+ * Measured, not assumed, and it took three probes to establish: plain text on
+ * stdout with exit 0 is discarded; stderr with a non-zero exit shows but Claude
+ * Code wraps it in "Stop hook error: Failed with non-blocking status code",
+ * which reads as a broken tool rather than a finding; structured JSON on stdout
+ * renders as an ordinary notice, with newlines, indentation and box-drawing
+ * characters surviving.
+ *
+ * So the exit code has to differ by caller — 0 for the hook, non-zero for CI —
+ * and that is worth pinning, because getting it backwards either loses the
+ * report entirely or fails somebody's build on a diagram.
+ */
+describe("the hook channel", () => {
+  let project: string;
+
+  async function check(...args: string[]) {
+    try {
+      const { stdout, stderr } = await run(TSX, [SCRIPT, ...args], { cwd: project });
+      return { code: 0, stdout, stderr };
+    } catch (error) {
+      const failure = error as { code?: number; stdout?: string; stderr?: string };
+      return { code: failure.code ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? "" };
+    }
+  }
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-hook-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    mkdirSync(path.join(project, "src"), { recursive: true });
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name: "hook",
+      nodes: [{ id: "gone", label: "Old Cache", ref: "src/cache.ts" }],
+      edges: [],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/hook.excalidraw"), drawn);
+  }, 120_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("delivers the report as a systemMessage and exits 0", async () => {
+    const result = await check("--hook");
+    // Non-zero here is what produced the "Stop hook error: Failed" framing.
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as { systemMessage?: string };
+    expect(payload.systemMessage).toContain("Old Cache");
+    expect(payload.systemMessage).toContain("/update-diagram");
+    // Nothing on stderr in hook mode: it would be discarded, and a report that
+    // exists in a channel nobody reads is the failure this whole thing is about.
+    expect(result.stderr.trim()).toBe("");
+  }, 120_000);
+
+  it("still fails a build when it is not a hook", async () => {
+    const result = await check();
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("Old Cache");
+    expect(result.stdout.trim()).toBe("");
+  }, 120_000);
+
+  it("says nothing in either mode when the diagram is fine", async () => {
+    const clean = mkdtempSync(path.join(tmpdir(), "drift-cli-hook-clean-"));
+    mkdirSync(path.join(clean, "docs/diagrams"), { recursive: true });
+    try {
+      for (const args of [[], ["--hook"]]) {
+        const { stdout, stderr } = await run(TSX, [SCRIPT, ...args], { cwd: clean });
+        expect(`${stdout}${stderr}`.trim()).toBe("");
+      }
+    } finally {
+      rmSync(clean, { recursive: true, force: true });
+    }
+  }, 120_000);
 });

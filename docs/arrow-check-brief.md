@@ -4,6 +4,10 @@ A design problem, handed over deliberately unsolved. Everything below was measur
 in this repo on 2026-08-04; where something is opinion it says so. If a claim here
 disagrees with the code, trust the code and fix this file.
 
+**Status: solved and shipped, same day.** The measurements that decided it are in
+"The rule that shipped" near the end; the original brief is kept intact above it,
+with corrections marked where a claim measured false.
+
 ## The problem in one sentence
 
 A diagram says `A → B`. Is there a mechanical check that can tell when that arrow
@@ -32,7 +36,9 @@ A node can carry a `ref`: `src/engine/layout.ts`, or `path#symbol`. Refs are
 `recorded` when a tool drew the node, or `inferred` when the ref was guessed from a
 hand-drawn label — an inferred ref is a guess about someone's sketch and is treated
 more gently. Three findings exist: `missing-file`, `missing-symbol`,
-`unresolvable-ref`.
+`unresolvable-ref` — and now a fourth, `unsupported-edge`, from the rule this brief
+asked for. It sits behind its own switch (`--no-edges`) so it can be turned off
+without losing the quiet missing-file check.
 
 Everything reaches the filesystem through the `Workspace` abstraction in
 `drift.ts` (`resolve` / `stat` / `read`), which confines paths to the root and
@@ -97,25 +103,34 @@ That is the bar to beat, and it is a low one.
 
 Arrows in this repo's own diagram mean *data flows to*, *serves*, *talks to*, and
 *is orchestrated into* at least as often as they mean *imports*. A check assuming
-one relation will mostly be wrong about the others. Some directions worth weighing,
-none of them decided:
+one relation will mostly be wrong about the others. Some directions worth weighing —
+each now carries what it measured on 2026-08-04:
 
 - **Classify edges rather than checking all of them.** If an edge could declare its
   kind (`imports`, `calls`, `serves`, `writes`, `over-http`), only the statically
   checkable kinds get checked and the rest are skipped honestly. Cost: something
   has to set that, and a model setting it re-imports the nondeterminism the
-  mechanical rule exists to avoid.
+  mechanical rule exists to avoid. *Not measured — the shipped rule reached zero
+  false positives without it, so the cost was never paid.*
 - **Invert the question.** Instead of validating drawn arrows, look for *missing*
   ones: A imports B, both are on the diagram, no edge between them. A missing edge
-  is a fact about the code, not an interpretation of an arrow. Plausibly far fewer
-  false positives — unmeasured, and worth measuring first.
+  is a fact about the code, not an interpretation of an arrow. *Measured: nine
+  flags on the correct diagram — every one a real import the diagram deliberately
+  abstracts away. Worse than the naive rule's four. Rejected.*
 - **Widen the relation beyond imports.** A mentions B's path in a string, spawns
-  it, fetches its route. Cheap to grep, and it would have caught two of the four
-  above.
+  it, fetches its route. *Measured: path mentions caught none of the four — the
+  earlier claim here that they "would have caught two" was wrong. The route half
+  of the idea is what worked, one import hop out: App.tsx's fetches live in
+  `src/viewer/sync.ts`, whose `/api/board` and `/api/events` literals match
+  board-server.ts's. Bare path mentions also whitewash — drift.ts's own docstring
+  example `ref: "src/engine/layout.ts"` would quietly bless a fabricated
+  drift → layout arrow — so they were dropped and route strings kept.*
 - **Report reachability, not adjacency.** `layout → convert` is true transitively
   through `diagram.ts`. A path-exists check over the import graph flags less.
-
-The last one is the cheapest thing to test next, and it is untested.
+  *Measured: flags exactly the same four edges as the naive rule. There is no
+  directed path layout ⇝ convert — `diagram.ts` imports both, which makes it a
+  shared importer, not a step on a path. That different relation is what shipped;
+  reachability itself bought nothing. Rejected.*
 
 ## How to evaluate whatever you design — measure, do not argue
 
@@ -126,6 +141,46 @@ The last one is the cheapest thing to test next, and it is untested.
    false, and confirm it is caught. A rule that flags nothing is not a rule.
 3. Report both numbers together. "No false positives" alone means nothing — the
    check that reports nothing achieves it.
+
+## The rule that shipped (measured 2026-08-04)
+
+An edge is **backed** when any static trace of a relationship connects its two
+files; only an edge with *no* trace at all is flagged, and the wording is "worth a
+look", never "wrong". Four corroboration channels:
+
+1. **A imports B** — direct relative import.
+2. **B imports A** — arrows here often mean data flow, which runs opposite the
+   import.
+3. **A shared importer** — some file C imports both. `diagram.ts` runs layout then
+   convert; neither imports the other, and the arrow between them is still true.
+   Candidates for C are the board's neighborhood: every ref'd code file on the
+   board plus each one's direct imports — no repo tree walk.
+4. **A shared route literal, one hop out** — string literals starting with `/`,
+   collected from each endpoint file and its direct imports. This is what backs
+   `server ↔ viewer`: the viewer's fetches live in `sync.ts`, one import from the
+   box's ref.
+
+Directory refs, non-TS/JS files, missing files (already reported as
+`missing-file`), hand-drawn edges, and refless or inferred-ref nodes are skipped
+and counted, never flagged.
+
+The numbers, per the evaluation rules above:
+
+- **False positives: 0 of 12** checkable edges on `board-internals.excalidraw`
+  (naive rule: 4). The two directory edges are skipped, as before.
+- **True positives: both constructions caught.** Deleting `server.ts`'s import of
+  `paths.ts` flags `mcp → paths`; a fabricated `viewer → paths` arrow drawn on a
+  copy of the diagram is flagged (nothing imports App.tsx, so no channel can
+  bless it).
+- **The honest cost:** of the 98 undrawn node pairs, only 26 would be caught if
+  drawn as fake arrows; 72 would be whitewashed, mostly by the shared-importer
+  channel through `server.ts`, which imports half the codebase. That blindness is
+  the deliberate price of a check that nags every turn and has no per-edge mute:
+  a miss is invisible, a false alarm costs the whole check — the same trade
+  `drift.ts` already makes for symbol renames.
+
+A regression test pins the zero: `tests/engine-drift.test.ts` runs the real
+diagram against the real tree and asserts clean.
 
 ## Constraints on the implementation
 
@@ -150,6 +205,7 @@ worth doing, and it makes the above more useful.
 ```bash
 npm test                       # unit tests
 npm run check:drift            # the check itself; silent when nothing has drifted
+npm run check:drift -- --no-edges   # missing-file check only
 npx vitest run tests/engine-drift.test.ts
 npm run test:e2e:board         # real Chromium, the live board
 ```

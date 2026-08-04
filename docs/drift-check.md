@@ -1,9 +1,9 @@
 # Drift check: keeping a diagram honest about the code
 
-Status: **missing files and symbols are built** — `src/engine/drift.ts`, the
-`check_drift` tool, `scripts/check-drift.mjs`, and a `Stop` hook in
-`.claude/settings.json`. Unrepresented modules and edge mismatches are still
-design; the rest of this file is the reasoning behind both halves.
+Status: **missing files, symbols, and edge mismatches are built** — `src/engine/drift.ts`,
+the `check_drift` tool, `scripts/check-drift.mjs`, and a `Stop` hook in
+`.claude/settings.json`. Unrepresented modules remain design; the rest of this file is the
+reasoning behind the complete picture.
 
 Fixing is a `/fix-drift` command, and deliberately not automatic. See
 "Reporting is not the same as being actionable" below for why the exit-2
@@ -179,11 +179,11 @@ empirically first.
 3. ~~`check_drift` MCP tool and `scripts/check-drift.mjs`.~~
 4. ~~Tests.~~ `tests/engine-drift.test.ts`, plus the round trip through a real
    stdio server in `tests/mcp-server.test.ts`.
-5. Next: unrepresented modules and edge mismatches, each behind its own flag so
-   a noisy check can be turned off without losing the useful one.
+5. ~~Edge mismatches: arrows grounded in four corroboration channels.~~ Done, behind
+   its own `edges` flag so a noisy check can be turned off without losing the quiet
+   missing-file check.
+6. Next: unrepresented modules, when the relevance threshold is settled.
 
-Before building (5), wait and see whether (1)–(4) ever fires on real work. The
-cheap check is deliberately the least likely to have anything to say: files are
-rarely deleted, so most rot is a relationship changing, which only edge
-mismatches catch. If refs never get set in practice, that is the thing to fix
-first, and no amount of import-graph work would have helped.
+The three checks are now built in descending order of confidence and cost: missing files
+(milliseconds, almost always actionable), edge mismatches (import resolution, measurably
+quiet), then unrepresented modules (would need a relevance bar to stay quiet).

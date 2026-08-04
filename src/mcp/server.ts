@@ -359,10 +359,12 @@ server.registerTool(
     title: "Check drift",
     description:
       "Do these diagrams still match the code? Compares each node's ref against the working tree "
-      + "and reports the ones pointing at a file or symbol that is gone. Read-only, and cheap "
-      + "enough to run whenever module structure changes. Nodes without a ref are skipped and "
-      + "hand-drawn ones ignored, so a clean report means nothing checkable disagreed -- not that "
-      + "the diagram is correct.",
+      + "and reports the ones pointing at a file or symbol that is gone, and checks arrows for static "
+      + "connections through imports, shared orchestrators, or route literals — unsupported ones are "
+      + "worth a look, not wrong. Read-only, and cheap "
+      + "enough to run whenever module structure changes. Nodes without a ref are skipped, "
+      + "hand-drawn ones ignored, and edges touching refless nodes are skipped, so a clean report means "
+      + "nothing checkable disagreed -- not that the diagram is correct.",
     inputSchema: {
       path: z
         .string()
@@ -384,24 +386,31 @@ server.registerTool(
       }
 
       const workspace = createWorkspace(WORKSPACE_ROOT);
-      const totals = { checked: 0, skipped: 0, handDrawn: 0 };
+      const totals = { checked: 0, skipped: 0, handDrawn: 0, edgesChecked: 0, edgesSkipped: 0 };
       const findings: Array<Record<string, unknown>> = [];
+      const edges: Array<Record<string, unknown>> = [];
       for (const file of files) {
         const report = checkDrift(await readBoard(file), workspace);
         totals.checked += report.checked;
         totals.skipped += report.skipped;
         totals.handDrawn += report.handDrawn;
+        totals.edgesChecked += report.edgesChecked;
+        totals.edgesSkipped += report.edgesSkipped;
         // Named per finding rather than grouped: a caller acting on one needs to
         // know which file to redraw, and flat is cheaper than nesting.
         for (const finding of report.findings) {
           findings.push({ board: relativeToWorkspace(file), ...finding });
         }
+        for (const finding of report.edges) {
+          edges.push({ board: relativeToWorkspace(file), ...finding });
+        }
       }
 
       return text({
         boards: files.map((file) => relativeToWorkspace(file)),
-        clean: findings.length === 0,
+        clean: findings.length === 0 && edges.length === 0,
         findings,
+        edges,
         ...totals,
         // "clean: true, checked: 0" reads as a pass when nothing was examined,
         // so say which it was.

@@ -106,3 +106,62 @@ describe("check-drift on the command line", () => {
     expect(result.stderr).not.toContain("clean.excalidraw");
   }, 120_000);
 });
+
+describe("unsupported edges on the command line", () => {
+  // Its own project, because the boards above accumulate: once stale.excalidraw
+  // exists that workspace exits 1 forever, and the --no-edges silence below
+  // would have nothing left to prove.
+  let project: string;
+
+  async function check(...args: string[]) {
+    try {
+      const { stdout, stderr } = await run(TSX, [SCRIPT, ...args], { cwd: project });
+      return { code: 0, stdout, stderr };
+    } catch (error) {
+      const failure = error as { code?: number; stdout?: string; stderr?: string };
+      return { code: failure.code ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? "" };
+    }
+  }
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-edges-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    mkdirSync(path.join(project, "src"), { recursive: true });
+    // Both files exist, so the missing-file check stays quiet. Nothing imports,
+    // mentions, or shares a string with anything — the drawn arrow is the only
+    // claim of a relationship, which is exactly what the edge check flags.
+    writeFileSync(path.join(project, "src/left.ts"), "export const left = 1;\n");
+    writeFileSync(path.join(project, "src/right.ts"), "export const right = 1;\n");
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name: "edges",
+      nodes: [
+        { id: "left", label: "Left", ref: "src/left.ts" },
+        { id: "right", label: "Right", ref: "src/right.ts" },
+      ],
+      edges: [{ from: "left", to: "right" }],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/edges.excalidraw"), drawn);
+  }, 120_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("flags the arrow, names both boxes, and only calls it worth a look", async () => {
+    const result = await check();
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("edges.excalidraw");
+    expect(result.stderr).toContain("Left");
+    expect(result.stderr).toContain("Right");
+    expect(result.stderr).toContain("worth a look");
+  }, 120_000);
+
+  it("--no-edges turns off just this check, and the report goes quiet", async () => {
+    const result = await check("--no-edges");
+    // The files all exist, so with edges off there is nothing to say — and the
+    // point of the separate flag is that a noisy edge check can be silenced
+    // without losing the missing-file check.
+    expect(result.code).toBe(0);
+    expect(`${result.stdout}${result.stderr}`.trim()).toBe("");
+  }, 120_000);
+});

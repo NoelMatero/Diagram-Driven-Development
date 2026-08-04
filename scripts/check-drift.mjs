@@ -31,7 +31,7 @@
  */
 import path from "node:path";
 
-import { box } from "./lib/box.mjs";
+import { box, fit, pad } from "./lib/box.mjs";
 import { readBoard } from "../src/engine/board-file.ts";
 import { checkDrift, createWorkspace, findBoards, parseRef } from "../src/engine/drift.ts";
 
@@ -87,62 +87,119 @@ function paint(text, colour, enabled) {
   return enabled && colour ? `${COLOUR[colour]}${text}${COLOUR.off}` : String(text);
 }
 
-/**
- * Markers, chosen for width rather than looks.
- *
- * Both are East Asian Wide, so they take two cells in every terminal. `⚠️` is
- * "ambiguous" — one cell or two depending on the terminal — and it sheared every
- * padded row it appeared in. These also carry the red/amber meaning into a
- * systemMessage, where ANSI colour is stripped.
- */
-const GONE = "\u{1F534}";    // points at code that is not there
-const SUSPECT = "\u{1F7E1}"; // an arrow with no static trace: worth a look
-
-/** Kept low on purpose: this fires at the end of every turn. */
-const MAX_LISTED = 5;
+/** Rows of findings. Low on purpose: this fires at the end of every turn. */
+const MAX_LISTED = 6;
 
 /**
- * The report, as short as it can be while still naming what is wrong.
+ * The report, in as few lines as it can be while still naming what is wrong.
  *
- * The diagram and its counts ride in the top border, the way out in the bottom
- * one, and the legend is gone entirely — a symbol that needs explaining every
- * turn is the wrong symbol. Four lines for a stale diagram instead of twelve.
+ * Severity is carried by colour, not by symbols. Emoji were used first because
+ * ANSI was believed to be stripped from a systemMessage; it is not — measured by
+ * putting real escapes in one and looking. Colour is strictly better here: it
+ * occupies no cells, so nothing can shear, where `⚠️` is ambiguous-width and
+ * sheared every padded row it appeared in.
+ *
+ * The diagram and its counts ride in the top border, the way out in the bottom.
+ * One stale diagram lists its findings; several get a line each with their own
+ * counts, because listing findings across five diagrams spends the whole notice
+ * on the first one.
  */
 function render(stale, colour) {
-  const lines = [];
-
-  for (const { file, report } of stale) {
-    const rows = [
-      ...report.findings.map((finding) => `${GONE} ${boxName(finding)} \u2192 ${target(finding)}`),
-      ...report.edges.map(
-        (finding) =>
-          `${SUSPECT} ${boxName({ label: finding.fromLabel, node: finding.from })}`
-          + ` \u2192 ${boxName({ label: finding.toLabel, node: finding.to })}`,
+  const rowsFor = ({ report }) => [
+    ...report.findings.map((finding) => paint(`${boxName(finding)} \u2192 ${target(finding)}`, "red", colour)),
+    ...report.edges.map((finding) =>
+      paint(
+        `${boxName({ label: finding.fromLabel, node: finding.from })}`
+        + ` \u2192 ${boxName({ label: finding.toLabel, node: finding.to })}`,
+        "yellow",
+        colour,
       ),
-    ];
+    ),
+  ];
 
-    const counts = [
-      report.findings.length ? `${GONE} ${paint(report.findings.length, "red", colour)}` : "",
-      report.edges.length ? `${SUSPECT} ${paint(report.edges.length, "yellow", colour)}` : "",
+  const tally = (gone, arrows) =>
+    [
+      gone ? paint(`${gone} gone`, "red", colour) : "",
+      arrows ? paint(`${arrows} ${arrows === 1 ? "arrow" : "arrows"}`, "yellow", colour) : "",
     ].filter(Boolean).join("  ");
 
-    const shown = rows.slice(0, MAX_LISTED);
-    const hidden = rows.length - shown.length;
-    if (hidden > 0) shown.push(paint(`\u2026 and ${hidden} more`, "dim", colour));
+  const totals = stale.reduce(
+    (sum, { report }) => ({
+      gone: sum.gone + report.findings.length,
+      arrows: sum.arrows + report.edges.length,
+    }),
+    { gone: 0, arrows: 0 },
+  );
 
-    lines.push(
-      ...box({
-        head: `${path.basename(file)}  ${counts}`,
-        foot: "/update-diagram updates the diagram",
-        rows: shown,
-      }),
-    );
+  const single = stale.length === 1;
+  const head = single
+    ? `${path.basename(stale[0].file)}  ${tally(totals.gone, totals.arrows)}`
+    : `${stale.length} diagrams out of date  ${tally(totals.gone, totals.arrows)}`;
+
+  const rows = [];
+  let hidden = 0;
+  if (single) {
+    const found = rowsFor(stale[0]);
+    rows.push(...found.slice(0, MAX_LISTED));
+    hidden = Math.max(0, found.length - MAX_LISTED);
+  } else {
+    const widest = Math.min(28, Math.max(...stale.map(({ file }) => path.basename(file).length)));
+    for (const entry of stale.slice(0, MAX_LISTED)) {
+      const label = pad(fit(path.basename(entry.file), widest), widest);
+      rows.push(`${label}  ${tally(entry.report.findings.length, entry.report.edges.length)}`);
+    }
+    hidden = Math.max(0, stale.length - MAX_LISTED);
+  }
+  if (hidden > 0) {
+    rows.push(paint(`\u2026 and ${hidden} more${single ? "" : " diagrams"}`, "dim", colour));
   }
 
-  return lines;
+  return box({ head, foot: "/update-diagram updates the diagram", rows });
+}
+
+/**
+ * Is this a hook? Claude Code pipes hook input as JSON on stdin, so the script can
+ * tell without being told — and a user who forgets `--hook` gets the notice rather
+ * than the "Stop hook error" framing, which is the whole point of the flag.
+ *
+ * Guarded twice, because hanging is worse than being ugly: a terminal is excluded
+ * outright, and anything slower than 200ms falls back to the plain-text path.
+ */
+async function hookOnStdin() {
+  if (process.stdin.isTTY) return false;
+
+  let timer;
+  const read = new Promise((resolve) => {
+    const chunks = [];
+    process.stdin.on("data", (chunk) => chunks.push(chunk));
+    process.stdin.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    process.stdin.on("error", () => resolve(""));
+  });
+  const raw = await Promise.race([
+    read,
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(""), 200);
+    }),
+  ]);
+
+  // Both of these matter. Listening on stdin puts it in flowing mode and holds the
+  // event loop open, so a clean run — which prints nothing and never calls exit —
+  // hung until the test harness killed it at two minutes. The timer holds it open
+  // the same way.
+  clearTimeout(timer);
+  process.stdin.pause();
+  process.stdin.unref();
+
+  try {
+    const payload = JSON.parse(raw);
+    return Boolean(payload && typeof payload === "object" && payload.hook_event_name);
+  } catch {
+    return false;
+  }
 }
 
 const { boards, opts } = parseArgs();
+if (!opts.hook) opts.hook = await hookOnStdin();
 const workspace = createWorkspace(root);
 const stale = [];
 const problems = [];
@@ -165,12 +222,14 @@ for (const file of await boardsToCheck(boards)) {
 if (stale.length > 0 || problems.length > 0) {
   // Colour only where it survives and means something: a real terminal. In a
   // systemMessage the escapes are stripped, so the symbols carry severity there.
-  const colour = !opts.hook && Boolean(process.stderr.isTTY);
+  // Measured: ANSI renders in a systemMessage. Off only when the output is being
+  // piped or captured, where escapes would be junk in somebody's log.
+  const colour = opts.hook || Boolean(process.stderr.isTTY);
   const lines = [...problems, ...(stale.length > 0 ? render(stale, colour) : [])];
 
   if (opts.hook) {
     process.stdout.write(
-      `${JSON.stringify({ continue: true, suppressOutput: false, systemMessage: lines.join("\n") })}\n`,
+      `${JSON.stringify({ continue: true, suppressOutput: false, systemMessage: `\n${lines.join("\n")}` })}\n`,
     );
     // Zero on purpose: the notice has been delivered, and a non-zero exit here is
     // what produced the "Stop hook error: Failed" framing in the first place.

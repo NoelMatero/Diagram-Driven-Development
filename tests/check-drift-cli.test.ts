@@ -8,7 +8,7 @@
  * useful, and the guidance line was previously printed only to a terminal, so
  * from a hook — the way it actually runs — nobody ever saw it.
  */
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -153,10 +153,11 @@ describe("unsupported edges on the command line", () => {
     expect(result.stderr).toContain("edges.excalidraw");
     expect(result.stderr).toContain("Left");
     expect(result.stderr).toContain("Right");
-    // An unsupported arrow is a suspicion, not a verdict, and the notice carries
-    // that in the amber marker rather than in a sentence it repeats every turn.
-    expect(result.stderr).toContain("🟡");
-    expect(result.stderr).not.toContain("🔴");
+    // An unsupported arrow is a suspicion, not a verdict. The notice carries that
+    // in colour rather than in a sentence repeated every turn, and says "arrow",
+    // never "wrong".
+    expect(result.stderr).toContain("1 arrow");
+    expect(result.stderr).not.toContain("gone");
     expect(result.stderr.toLowerCase()).not.toContain("wrong");
   }, 120_000);
 
@@ -218,16 +219,19 @@ describe("a report with many findings stays readable", () => {
     // documentation where it is read once.
     expect(stderr).not.toContain("no shared importer");
     expect(stderr).not.toContain("worth a look");
+    // And no colour when the output is captured: escapes in a log or a CI
+    // transcript are noise.
+    expect(stderr).not.toContain("\\u001b[");
   });
 
   it("counts every finding even though it lists only the first few", () => {
-    // The count rides in the heading beside the marker: "many.excalidraw  🟡 12".
-    expect(stderr).toMatch(/🟡 12/);
+    // The count rides in the heading: "many.excalidraw  12 arrows".
+    expect(stderr).toMatch(/12 arrows/);
     expect(stderr).toMatch(/… and \d+ more/);
     // The count in the heading is what makes trimming honest rather than hiding.
     // Arrow lines are indented under their heading; the exact indent is the
     // format's business, the count is the contract.
-    const listed = (stderr.match(/│ 🟡 A → /g) ?? []).length;
+    const listed = (stderr.match(/│ A → /g) ?? []).length;
     const hidden = Number(/… and (\d+) more/.exec(stderr)?.[1] ?? 0);
     expect(listed + hidden).toBe(12);
   });
@@ -311,5 +315,74 @@ describe("the hook channel", () => {
     } finally {
       rmSync(clean, { recursive: true, force: true });
     }
+  }, 120_000);
+});
+
+/**
+ * Colour, and where it is allowed to go.
+ *
+ * ANSI does render inside a Claude Code systemMessage — measured by putting real
+ * escapes in one and looking, after an earlier round concluded the opposite from a
+ * copy-paste, where colour is invisible either way. That is why severity is colour
+ * and not emoji: colour occupies no cells and cannot shear a padded row, while
+ * `⚠️` is ambiguous-width and did.
+ *
+ * It must not reach a pipe though, and that is the half a test can check.
+ */
+describe("colour", () => {
+  const RED = "\u001b[31m";
+  let project: string;
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-colour-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name: "colour",
+      nodes: [{ id: "gone", label: "Old Cache", ref: "src/cache.ts" }],
+      edges: [],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/colour.excalidraw"), drawn);
+  }, 120_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("paints the notice, because the notice renders it", async () => {
+    const { stdout } = await run(TSX, [SCRIPT, "--hook"], { cwd: project });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    expect(payload.systemMessage).toContain(RED);
+  }, 120_000);
+
+  it("leaves captured output plain", async () => {
+    try {
+      await run(TSX, [SCRIPT], { cwd: project });
+      throw new Error("expected a non-zero exit");
+    } catch (error) {
+      const failure = error as { stderr?: string };
+      expect(failure.stderr).toContain("Old Cache");
+      expect(failure.stderr).not.toContain("\u001b[");
+    }
+  }, 120_000);
+
+  it("switches to the notice when hook JSON arrives on stdin, with no flag", () => {
+    // execFile ignores `input`; only the sync form actually writes to stdin, which
+    // is why an earlier version of this test proved nothing.
+    const stdout = execFileSync(TSX, [SCRIPT], {
+      cwd: project,
+      input: JSON.stringify({ hook_event_name: "Stop", session_id: "test" }),
+      encoding: "utf8",
+    });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    // The flag is a trap otherwise: forget it and the report comes back wrapped in
+    // "Stop hook error: Failed", which reads as a broken tool rather than a finding.
+    expect(payload.systemMessage).toContain("Old Cache");
+  }, 120_000);
+
+  it("starts the notice on its own line, so the harness prefix cannot shift the border", async () => {
+    const { stdout } = await run(TSX, [SCRIPT, "--hook"], { cwd: project });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    // "Stop says: ┌───" pushed the top border right by the width of that prefix.
+    expect(payload.systemMessage.startsWith("\n")).toBe(true);
   }, 120_000);
 });

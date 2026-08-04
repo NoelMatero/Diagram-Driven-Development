@@ -181,24 +181,24 @@ same in your own project, add this to its `.claude/settings.json`:
 ] }] } }
 ```
 
-`--hook` matters. With it, a stale diagram arrives as an ordinary notice:
+`--hook` is optional now: the script recognises hook input on stdin and switches by
+itself. Either way a stale diagram arrives as an ordinary notice, four lines, with
+the counts in red and amber:
 
 ```
-── diagram out of date · board-internals.excalidraw ──────────
-
-   2 boxes point at code that is gone
-       "Old Cache"    →  src/cache.ts
-       "Legacy sync"  →  src/sync/legacy.ts
-
-── run /update-diagram to bring it back in line ──────────────
+┌─ board-internals.excalidraw  2 gone  1 arrow ─┐
+│ Old Cache → src/cache.ts                      │
+│ Legacy sync → src/sync/legacy.ts              │
+│ Contrast → Staggered reveal                   │
+└─ /update-diagram updates the diagram ─────────┘
 ```
 
-Without it the report still appears, but Claude Code wraps it in
+Several stale diagrams get a line each with their own counts instead. Without the
+notice channel the report still appears, but wrapped in
 `Stop hook error: Failed with non-blocking status code`, which reads as a broken
-tool rather than a finding. That framing is what `--hook` exists to avoid: the
-report goes out as a structured message and the process exits 0. Leave the flag
-off anywhere an exit code is the point — CI, a pre-commit hook — where a
-non-zero exit is exactly what you want.
+tool rather than a finding. Leave the flag off anywhere an exit code is the point —
+CI, a pre-commit hook — where a non-zero exit is exactly what you want, and where
+the output stays plain because escapes in a log are noise.
 
 Point it at a clone instead (`npx tsx /abs/path/to/board/scripts/check-drift.mjs
 --hook`) if you are working on this repo; either way the path cannot use

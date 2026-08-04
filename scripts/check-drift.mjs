@@ -23,9 +23,26 @@ import { checkDrift, createWorkspace, findBoards, parseRef } from "../src/engine
 
 const root = process.cwd();
 
-async function boardsToCheck() {
-  const given = process.argv.slice(2).filter((entry) => !entry.startsWith("--"));
-  return given.length > 0 ? given.map((entry) => path.resolve(root, entry)) : findBoards(root);
+function parseArgs() {
+  const argv = process.argv.slice(2);
+  const opts = {
+    edges: true,
+  };
+  const boards = [];
+
+  for (const arg of argv) {
+    if (arg === "--no-edges") {
+      opts.edges = false;
+    } else if (!arg.startsWith("--")) {
+      boards.push(arg);
+    }
+  }
+
+  return { boards, opts };
+}
+
+async function boardsToCheck(boards) {
+  return boards.length > 0 ? boards.map((entry) => path.resolve(root, entry)) : findBoards(root);
 }
 
 /**
@@ -46,13 +63,24 @@ function describe(finding) {
   return `${box} points at ${target}, which no longer exists${guessed}`;
 }
 
+/**
+ * One plain line per unsupported edge. Reader is whoever asked for the diagram,
+ * so it names both boxes and explains why nothing in the code connects them.
+ */
+function describeEdge(finding) {
+  const fromBox = `"${(finding.fromLabel || finding.from).replace(/\s+/g, " ")}"`;
+  const toBox = `"${(finding.toLabel || finding.to).replace(/\s+/g, " ")}"`;
+  return `${fromBox} → ${toBox} — ${finding.detail}`;
+}
+
+const { boards, opts } = parseArgs();
 const workspace = createWorkspace(root);
 let drifted = 0;
 
-for (const file of await boardsToCheck()) {
+for (const file of await boardsToCheck(boards)) {
   let report;
   try {
-    report = checkDrift(await readBoard(file), workspace);
+    report = checkDrift(await readBoard(file), workspace, { edges: opts.edges });
   } catch (error) {
     // An unreadable board is a problem, but not drift. Say so and keep going
     // rather than failing a commit over a file that may not be a board at all.
@@ -66,6 +94,7 @@ for (const file of await boardsToCheck()) {
   // first line, so the file has to be named where the eye lands after that.
   console.error(`diagram out of date — ${path.basename(file)}`);
   for (const finding of report.findings) console.error(`  ${describe(finding)}`);
+  for (const finding of report.edges) console.error(`  ${describeEdge(finding)}`);
 }
 
 if (drifted > 0) {

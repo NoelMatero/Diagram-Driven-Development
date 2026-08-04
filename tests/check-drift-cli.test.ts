@@ -24,13 +24,23 @@ installExcalifontMeasurer();
 const run = promisify(execFile);
 const REPO = path.resolve(__dirname, "..");
 const SCRIPT = path.join(REPO, "scripts/check-drift.mjs");
+/**
+ * This repo's own tsx, not `npx tsx`.
+ *
+ * These runs happen from a temp project with no node_modules, so npx resolves
+ * nothing there, fetches tsx from the registry and prints `npm warn exec ...` to
+ * stderr — which fails the silence check below. It passed locally anyway because
+ * the npx cache was already warm, and only failed in CI. Naming the binary makes
+ * the test say the same thing on every machine, and removes a network call.
+ */
+const TSX = path.join(REPO, "node_modules/.bin/tsx");
 
 let workspace: string;
 
 /** Runs the check the way a hook does: from the project directory, not this repo. */
 async function checkDrift(): Promise<{ code: number; stderr: string; stdout: string }> {
   try {
-    const { stdout, stderr } = await run("npx", ["tsx", SCRIPT], { cwd: workspace });
+    const { stdout, stderr } = await run(TSX, [SCRIPT], { cwd: workspace });
     return { code: 0, stdout, stderr };
   } catch (error) {
     const failure = error as { code?: number; stdout?: string; stderr?: string };

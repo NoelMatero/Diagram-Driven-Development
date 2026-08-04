@@ -31,6 +31,7 @@
  */
 import path from "node:path";
 
+import { box } from "./lib/box.mjs";
 import { readBoard } from "../src/engine/board-file.ts";
 import { checkDrift, createWorkspace, findBoards, parseRef } from "../src/engine/drift.ts";
 
@@ -61,106 +62,90 @@ async function boardsToCheck(boards) {
   return boards.length > 0 ? boards.map((entry) => path.resolve(root, entry)) : findBoards(root);
 }
 
-/**
- * A rule across the notice, carrying its own label.
- *
- * Rules only, never a full box: a bordered grid is aligned to a width nothing
- * here knows. The hook has no terminal to measure, and one long diagram name or
- * a narrow window turns a grid into wreckage. A rule with nothing on its right
- * cannot be sheared by a line that overruns it.
- */
-const WIDTH = 62;
-function rule(label = "") {
-  const head = label ? `── ${label} ` : "──";
-  return head + "─".repeat(Math.max(3, WIDTH - [...head].length));
-}
-
 /** Box name as the reader sees it on the canvas. */
 function boxName(finding) {
-  return `"${(finding.label || finding.node).replace(/\s+/g, " ")}"`;
+  return (finding.label || finding.node).replace(/\s+/g, " ");
 }
 
-/**
- * What a stale box points at, without repeating why it is stale — the group
- * heading says that once for all of them.
- */
+/** What a stale box points at. */
 function target(finding) {
   const { path: file, symbol } = parseRef(finding.ref);
-  const guessed = finding.provenance === "inferred" ? "  (guessed from its label)" : "";
-  if (finding.kind === "missing-symbol") return `${symbol} in ${file}${guessed}`;
-  if (finding.kind === "unresolvable-ref") return `${finding.ref}${guessed}`;
-  return `${file}${guessed}`;
+  if (finding.kind === "missing-symbol") return `${symbol} in ${file}`;
+  if (finding.kind === "unresolvable-ref") return finding.ref;
+  return file;
 }
-
-/** Headings per kind, so the line itself can be just the fact. */
-const HEADINGS = {
-  "missing-file": ["box points", "boxes point", "at code that is gone"],
-  "missing-symbol": ["box points", "boxes point", "at a symbol that is gone"],
-  "unresolvable-ref": ["box points", "boxes point", "at something that is not a file here"],
-};
-
-/** Listed in full up to here; past it the remainder is counted instead. */
-const MAX_LISTED = 8;
 
 /**
- * A counted group: heading, then the findings, then how many were not shown.
+ * Colour, only ever to a real terminal.
  *
- * The count lives in the heading, which is what makes listing eight of twelve
- * honest rather than a quiet omission.
+ * A Claude Code systemMessage strips ANSI, measured — so in the notice the
+ * severity has to be carried by a symbol instead, and emitting escapes there
+ * would only risk the padding arithmetic for nothing.
  */
-function group(out, count, heading, lines) {
-  if (lines.length === 0) return;
-  out.push(`   ${count} ${heading}`);
-  for (const line of lines.slice(0, MAX_LISTED)) out.push(`       ${line}`);
-  const hidden = lines.length - MAX_LISTED;
-  if (hidden > 0) out.push(`       … and ${hidden} more`);
-  out.push("");
+const COLOUR = { red: "\u001b[31m", yellow: "\u001b[33m", dim: "\u001b[2m", off: "\u001b[0m" };
+function paint(text, colour, enabled) {
+  return enabled && colour ? `${COLOUR[colour]}${text}${COLOUR.off}` : String(text);
 }
 
-/** Pads the left column so the arrows line up, without letting it run away. */
-function columns(rows) {
-  const width = Math.min(30, Math.max(...rows.map(([left]) => [...left].length)));
-  return rows.map(([left, right]) => `${left.padEnd(width)}  →  ${right}`);
-}
+/**
+ * Markers, chosen for width rather than looks.
+ *
+ * Both are East Asian Wide, so they take two cells in every terminal. `⚠️` is
+ * "ambiguous" — one cell or two depending on the terminal — and it sheared every
+ * padded row it appeared in. These also carry the red/amber meaning into a
+ * systemMessage, where ANSI colour is stripped.
+ */
+const GONE = "\u{1F534}";    // points at code that is not there
+const SUSPECT = "\u{1F7E1}"; // an arrow with no static trace: worth a look
 
-function renderBoard(file, report, out) {
-  out.push(rule(`diagram out of date · ${path.basename(file)}`));
-  out.push("");
+/** Kept low on purpose: this fires at the end of every turn. */
+const MAX_LISTED = 5;
 
-  for (const [kind, [one, many, tail]] of Object.entries(HEADINGS)) {
-    const found = report.findings.filter((finding) => finding.kind === kind);
-    if (found.length === 0) continue;
-    group(
-      out,
-      found.length,
-      `${found.length === 1 ? one : many} ${tail}`,
-      columns(found.map((finding) => [boxName(finding), target(finding)])),
+/**
+ * The report, as short as it can be while still naming what is wrong.
+ *
+ * The diagram and its counts ride in the top border, the way out in the bottom
+ * one, and the legend is gone entirely — a symbol that needs explaining every
+ * turn is the wrong symbol. Four lines for a stale diagram instead of twelve.
+ */
+function render(stale, colour) {
+  const lines = [];
+
+  for (const { file, report } of stale) {
+    const rows = [
+      ...report.findings.map((finding) => `${GONE} ${boxName(finding)} \u2192 ${target(finding)}`),
+      ...report.edges.map(
+        (finding) =>
+          `${SUSPECT} ${boxName({ label: finding.fromLabel, node: finding.from })}`
+          + ` \u2192 ${boxName({ label: finding.toLabel, node: finding.to })}`,
+      ),
+    ];
+
+    const counts = [
+      report.findings.length ? `${GONE} ${paint(report.findings.length, "red", colour)}` : "",
+      report.edges.length ? `${SUSPECT} ${paint(report.edges.length, "yellow", colour)}` : "",
+    ].filter(Boolean).join("  ");
+
+    const shown = rows.slice(0, MAX_LISTED);
+    const hidden = rows.length - shown.length;
+    if (hidden > 0) shown.push(paint(`\u2026 and ${hidden} more`, "dim", colour));
+
+    lines.push(
+      ...box({
+        head: `${path.basename(file)}  ${counts}`,
+        foot: "/update-diagram updates the diagram",
+        rows: shown,
+      }),
     );
   }
 
-  if (report.edges.length > 0) {
-    const rows = report.edges.map((finding) => [
-      (finding.fromLabel || finding.from).replace(/\s+/g, " "),
-      (finding.toLabel || finding.to).replace(/\s+/g, " "),
-    ]);
-    // Why nothing connects them is said once here. It used to be repeated on
-    // every line, which cost 2360 characters for twelve arrows and buried the
-    // arrows themselves.
-    group(
-      out,
-      report.edges.length,
-      `${report.edges.length === 1 ? "arrow has" : "arrows have"} nothing in the code behind`
-      + `${report.edges.length === 1 ? " it" : " them"} — worth a look, not wrong as such`
-      + "\n       (no import either way, no shared importer, no shared route string)",
-      columns(rows),
-    );
-  }
+  return lines;
 }
 
 const { boards, opts } = parseArgs();
 const workspace = createWorkspace(root);
-const out = [];
-let drifted = 0;
+const stale = [];
+const problems = [];
 
 for (const file of await boardsToCheck(boards)) {
   let report;
@@ -169,32 +154,29 @@ for (const file of await boardsToCheck(boards)) {
   } catch (error) {
     // An unreadable board is a problem, but not drift. Say so and keep going
     // rather than failing a commit over a file that may not be a board at all.
-    out.push(`${path.relative(root, file)}: could not read (${error.message})`);
+    problems.push(`${path.relative(root, file)}: could not read (${error.message})`);
     continue;
   }
   if (report.clean) continue;
 
-  drifted += 1;
-  renderBoard(file, report, out);
+  stale.push({ file, report });
 }
 
-if (drifted > 0) {
-  // The way out is in the frame, not buried under the findings: being told a
-  // diagram is stale without being told anything can be done about it is where
-  // this stopped being useful.
-  out.push(rule("run /update-diagram to bring it back in line"));
+if (stale.length > 0 || problems.length > 0) {
+  // Colour only where it survives and means something: a real terminal. In a
+  // systemMessage the escapes are stripped, so the symbols carry severity there.
+  const colour = !opts.hook && Boolean(process.stderr.isTTY);
+  const lines = [...problems, ...(stale.length > 0 ? render(stale, colour) : [])];
 
   if (opts.hook) {
     process.stdout.write(
-      `${JSON.stringify({ continue: true, suppressOutput: false, systemMessage: out.join("\n") })}\n`,
+      `${JSON.stringify({ continue: true, suppressOutput: false, systemMessage: lines.join("\n") })}\n`,
     );
-    // Zero on purpose: the notice has been delivered, and a non-zero exit here
-    // is what produced the "Stop hook error: Failed" framing in the first place.
+    // Zero on purpose: the notice has been delivered, and a non-zero exit here is
+    // what produced the "Stop hook error: Failed" framing in the first place.
     process.exit(0);
   }
 
-  console.error(out.join("\n"));
+  console.error(lines.join("\n"));
   process.exit(1);
 }
-
-if (out.length > 0 && !opts.hook) console.error(out.join("\n"));

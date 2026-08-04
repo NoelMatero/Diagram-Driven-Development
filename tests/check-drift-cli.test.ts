@@ -147,13 +147,17 @@ describe("unsupported edges on the command line", () => {
     if (project) rmSync(project, { recursive: true, force: true });
   });
 
-  it("flags the arrow, names both boxes, and only calls it worth a look", async () => {
+  it("flags the arrow, names both boxes, and never calls it wrong", async () => {
     const result = await check();
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("edges.excalidraw");
     expect(result.stderr).toContain("Left");
     expect(result.stderr).toContain("Right");
-    expect(result.stderr).toContain("worth a look");
+    // An unsupported arrow is a suspicion, not a verdict, and the notice carries
+    // that in the amber marker rather than in a sentence it repeats every turn.
+    expect(result.stderr).toContain("🟡");
+    expect(result.stderr).not.toContain("🔴");
+    expect(result.stderr.toLowerCase()).not.toContain("wrong");
   }, 120_000);
 
   it("--no-edges turns off just this check, and the report goes quiet", async () => {
@@ -208,18 +212,22 @@ describe("a report with many findings stays readable", () => {
     if (project) rmSync(project, { recursive: true, force: true });
   });
 
-  it("explains why once, not once per arrow", () => {
-    const explanations = stderr.match(/no shared importer/g) ?? [];
-    expect(explanations).toHaveLength(1);
+  it("does not explain itself at all — the marker carries it", () => {
+    // This fires at the end of every turn. The explanation was printed once per
+    // arrow (2360 characters for twelve), then once per report, and is now in the
+    // documentation where it is read once.
+    expect(stderr).not.toContain("no shared importer");
+    expect(stderr).not.toContain("worth a look");
   });
 
   it("counts every finding even though it lists only the first few", () => {
-    expect(stderr).toContain("12 arrows");
+    // The count rides in the heading beside the marker: "many.excalidraw  🟡 12".
+    expect(stderr).toMatch(/🟡 12/);
     expect(stderr).toMatch(/… and \d+ more/);
     // The count in the heading is what makes trimming honest rather than hiding.
     // Arrow lines are indented under their heading; the exact indent is the
     // format's business, the count is the contract.
-    const listed = (stderr.match(/^\s+A\s+→\s+\S/gm) ?? []).length;
+    const listed = (stderr.match(/│ 🟡 A → /g) ?? []).length;
     const hidden = Number(/… and (\d+) more/.exec(stderr)?.[1] ?? 0);
     expect(listed + hidden).toBe(12);
   });

@@ -9,11 +9,15 @@ shows counts and the first few findings. This shows all of them.
 ## Run it
 
 ```
-npm run check:drift -- --details
+npm run check:drift -- --expand
 ```
 
 If that script is not in this project — the usual case, since the notice comes from
-an installed plugin — run `npx -y -p board-ai board-drift --details` instead.
+an installed plugin — run `npx -y -p board-ai board-drift --expand` instead.
+
+`--expand` prints every finding *and* leaves the notice expanded from now on, so
+the end-of-turn notice shows all of them too. `/shrink-report` puts it back. Use
+`--details` instead for a one-off view that changes nothing.
 
 Print the output as-is, in a code block, and stop. One box per diagram, every
 finding listed, the command to fix it in the bottom border. It is already the

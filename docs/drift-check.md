@@ -136,6 +136,15 @@ matters for more than looks: an escape sequence occupies zero cells, while `⚠�
 *ambiguous* width (one cell in some terminals, two in others) and sheared every
 padded row it appeared in.
 
+`/expand-report` leaves the notice expanded from then on, and `/shrink-report` puts
+it back. That is a mode, which is normally the wrong answer — but a command runs
+*during* a turn and the notice is written by the hook *after* it, so affecting a
+later notice can only be done by leaving something behind. It is a marker file in
+`.board-ai/` (gitignored, so it is one person's preference and not the repo's), and
+the objection to modes is answered by the notice itself: while expanded, its footer
+names `/shrink-report`. Nothing is remembered that the notice does not say out loud.
+`--details` remains the one-off that changes nothing.
+
 The notice is a box, kept to four lines for a single stale diagram: the diagram and
 its counts ride in the top border, `/update-diagram` rides in the bottom, and there
 is no legend — a symbol needing a footnote every turn is the wrong symbol. Several

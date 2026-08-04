@@ -537,3 +537,73 @@ describe("how much the notice says", () => {
     expect(message).toMatch(/8 gone/);
   }, 180_000);
 });
+
+/**
+ * Expanding as a mode, not a one-off.
+ *
+ * A command cannot reach into a notice the hook has already written, so making
+ * /expand-report affect *later* notices means leaving a preference behind. It lives
+ * in .board-ai/, which is gitignored, so it is one person's and not the repo's.
+ *
+ * The standing objection to a mode is that it is invisible once set. That is
+ * answered by the notice itself: while expanded, it names the way back.
+ */
+describe("expand as a mode", () => {
+  let project: string;
+
+  function run(...args: string[]) {
+    try {
+      return execFileSync(TSX, [SCRIPT, ...args], {
+        cwd: project,
+        stdio: ["ignore", "pipe", "pipe"],
+        encoding: "utf8",
+      });
+    } catch (error) {
+      return (error as { stderr?: string }).stderr ?? "";
+    }
+  }
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-mode-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    for (const name of ["one", "two"]) {
+      const { board: drawn } = await createDiagram(emptyBoard(), {
+        name,
+        nodes: [{ id: `${name}gone`, label: `${name} box`, ref: `src/${name}.ts` }],
+        edges: [],
+      });
+      await writeBoard(path.join(project, `docs/diagrams/${name}.excalidraw`), drawn);
+    }
+  }, 180_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("counts by default, with two diagrams stale", () => {
+    expect(run()).toContain("2 diagrams out of date");
+  }, 180_000);
+
+  it("stays expanded on later runs, and says how to undo it", () => {
+    run("--expand");
+    const next = run();
+    expect(next).toContain("one box →");
+    expect(next).toContain("two box →");
+    // A mode nobody can find the exit from is the thing to avoid.
+    expect(next).toContain("/shrink-report");
+  }, 180_000);
+
+  it("goes back to counts after --shrink, and stays there", () => {
+    run("--shrink");
+    const next = run();
+    expect(next).toContain("2 diagrams out of date");
+    expect(next).not.toContain("one box →");
+  }, 180_000);
+
+  it("--details shows everything without turning the mode on", () => {
+    const once = run("--details");
+    expect(once).toContain("one box →");
+    // The next notice is short again: --details changed nothing.
+    expect(run()).toContain("2 diagrams out of date");
+  }, 180_000);
+});

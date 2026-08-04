@@ -193,8 +193,9 @@ the counts in red and amber:
 └─ /update-diagram updates the diagram ─────────┘
 ```
 
-Several stale diagrams get a line each with their own counts instead, and
-`/expand-report` shows every finding, one box per diagram:
+Several stale diagrams get a line each with their own counts instead.
+`/expand-report` shows every finding, one box per diagram, and leaves the notice
+that way until `/shrink-report`:
 
 ```
 ┌─ board-internals.excalidraw  1 gone ────────────┐

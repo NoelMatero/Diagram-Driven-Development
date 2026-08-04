@@ -34,6 +34,7 @@
  * The JSON shape below is the one that was measured. Slimming it is not obviously
  * safe without measuring again.
  */
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { box, fit, pad } from "./lib/box.mjs";
@@ -48,6 +49,8 @@ function parseArgs() {
     edges: true,
     hook: false,
     details: false,
+    expand: false,
+    shrink: false,
   };
   const boards = [];
 
@@ -58,12 +61,43 @@ function parseArgs() {
       opts.hook = true;
     } else if (arg === "--details" || arg === "--full") {
       opts.details = true;
+    } else if (arg === "--expand") {
+      opts.expand = true;
+    } else if (arg === "--shrink") {
+      opts.shrink = true;
     } else if (!arg.startsWith("--")) {
       boards.push(arg);
     }
   }
 
   return { boards, opts };
+}
+
+/**
+ * Whether the notice has been asked to stay expanded.
+ *
+ * A file rather than an argument, because the caller that needs to know is the
+ * *next* hook run, and a command cannot reach into a message the hook has already
+ * written. It lives in .board-ai/, which is gitignored, so the preference is one
+ * person's and not the repository's.
+ *
+ * The obvious objection to a mode is that it is invisible once set and then
+ * puzzling — so the expanded notice always names the way back. Nothing here is
+ * remembered that the notice does not say out loud.
+ */
+const MODE_FILE = path.join(root, ".board-ai", "report-expanded");
+
+function setExpanded(on) {
+  if (on) {
+    mkdirSync(path.dirname(MODE_FILE), { recursive: true });
+    writeFileSync(MODE_FILE, "expanded\n");
+  } else {
+    rmSync(MODE_FILE, { force: true });
+  }
+}
+
+function isExpanded() {
+  return existsSync(MODE_FILE);
 }
 
 async function boardsToCheck(boards) {
@@ -141,13 +175,13 @@ function tallyFor(report, colour) {
  * the reasoning can ask, or read docs/drift-check.md. The command sits in the
  * bottom border of the last box, so it appears once under everything.
  */
-function renderDetails(stale, colour) {
+function renderDetails(stale, colour, foot = "/update-diagram updates the diagram") {
   return box({
     sections: stale.map((entry) => ({
       label: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
       rows: rowsFor(entry, colour),
     })),
-    foot: "/update-diagram updates the diagram",
+    foot,
     max: 72,
   });
 }
@@ -239,6 +273,10 @@ async function hookOnStdin() {
 
 const { boards, opts } = parseArgs();
 if (!opts.hook) opts.hook = await hookOnStdin();
+if (opts.expand) setExpanded(true);
+if (opts.shrink) setExpanded(false);
+// --details is a one-off; the mode file is what the next hook run reads.
+const expanded = opts.details || opts.expand || (!opts.shrink && isExpanded());
 const workspace = createWorkspace(root);
 const stale = [];
 const problems = [];
@@ -259,13 +297,25 @@ for (const file of await boardsToCheck(boards)) {
 }
 
 if (stale.length > 0 || problems.length > 0) {
-  // Colour only where it survives and means something: a real terminal. In a
-  // systemMessage the escapes are stripped, so the symbols carry severity there.
   // Measured: ANSI renders in a systemMessage. Off only when the output is being
   // piped or captured, where escapes would be junk in somebody's log.
   const colour = opts.hook || Boolean(process.stderr.isTTY);
-  const report = opts.details ? renderDetails : render;
-  const lines = [...problems, ...(stale.length > 0 ? report(stale, colour) : [])];
+  const lines = [
+    ...problems,
+    ...(stale.length === 0
+      ? []
+      : expanded
+        ? renderDetails(
+            stale,
+            colour,
+            // Never a mode you cannot find your way out of: while it is on, the
+            // notice says how to turn it off.
+            isExpanded()
+              ? "/update-diagram updates it · /shrink-report makes this short again"
+              : "/update-diagram updates the diagram",
+          )
+        : render(stale, colour)),
+  ];
 
   if (opts.hook) {
     process.stdout.write(

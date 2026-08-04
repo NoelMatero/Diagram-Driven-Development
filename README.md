@@ -177,15 +177,31 @@ same in your own project, add this to its `.claude/settings.json`:
 
 ```json
 { "hooks": { "Stop": [{ "matcher": "*", "hooks": [
-  { "type": "command", "command": "npx -y -p board-ai@0.1.0 board-drift" }
+  { "type": "command", "command": "npx -y -p board-ai@0.1.0 board-drift --hook" }
 ] }] } }
 ```
 
-Claude Code prefixes the report with `Stop hook error: Failed`, because the script
-exits non-zero. Nothing is broken when you see that — it is the only channel that
-shows up at all; exiting 0 with the report on stdout is silently discarded. Point
-it at a clone instead (`npx tsx /abs/path/to/board/scripts/check-drift.mjs`) if
-you are working on this repo; either way the path cannot use
+`--hook` matters. With it, a stale diagram arrives as an ordinary notice:
+
+```
+── diagram out of date · board-internals.excalidraw ──────────
+
+   2 boxes point at code that is gone
+       "Old Cache"    →  src/cache.ts
+       "Legacy sync"  →  src/sync/legacy.ts
+
+── run /update-diagram to bring it back in line ──────────────
+```
+
+Without it the report still appears, but Claude Code wraps it in
+`Stop hook error: Failed with non-blocking status code`, which reads as a broken
+tool rather than a finding. That framing is what `--hook` exists to avoid: the
+report goes out as a structured message and the process exits 0. Leave the flag
+off anywhere an exit code is the point — CI, a pre-commit hook — where a
+non-zero exit is exactly what you want.
+
+Point it at a clone instead (`npx tsx /abs/path/to/board/scripts/check-drift.mjs
+--hook`) if you are working on this repo; either way the path cannot use
 `${CLAUDE_PLUGIN_ROOT}`, which is only substituted in configuration the plugin
 itself provides, not in yours. The plugin does not install this hook for you
 either, because a project with no diagrams should not pay for a subprocess on

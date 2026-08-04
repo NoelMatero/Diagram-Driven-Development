@@ -111,22 +111,36 @@ The config shape was worth confirming twice, since a wrong key fails silently:
 the published docs say `Stop` ignores matchers, while the plugin-dev validator
 rejects a hook without one. `"matcher": "*"` satisfies both.
 
-Both reporting channels were measured on a real `Stop` hook, and only one of them
-works:
+Every reporting channel was measured on a real `Stop` hook, in three rounds:
 
 | Script behaviour | What the user sees |
 | --- | --- |
 | stderr, exit 1 | `Stop hook error: Failed with non-blocking status code:` then the full report |
-| stdout, exit 0 | nothing at all |
+| plain text on stdout, exit 0 | nothing at all |
+| **JSON on stdout with `systemMessage`, exit 0** | **the message, rendered as an ordinary notice** |
 
-So exit 1 it is, despite the misleading wrapper: visible and mislabelled beats
-correct and silent. The report leads with "drift check:" and ends with "nothing
-has failed" to carry the framing the wrapper strips. Exit 2 would put the text in
-front of the model instead, at the cost of blocking the turn from ending, so it
-was not used.
+The third row is what the check now uses, behind `--hook`. For most of this
+project's life the first row was believed to be the only channel that worked, and
+the report was written to apologise for the "Stop hook error" framing — a check
+that had to explain it was not broken every time it spoke. It isn't necessary.
 
-Worth re-testing if hook output rendering changes; the second row is the one that
-should be usable, and if it ever becomes so the wording can go back to neutral.
+What survives inside a `systemMessage`, measured the same way: newlines,
+indentation, box-drawing characters, and symbols like `→` and `·`. ANSI colour
+does **not** — it is stripped, cleanly, so emitting it buys nothing. Markdown
+appears to arrive literally, so `**bold**` shows its asterisks.
+
+Hence rules rather than a bordered box in the notice: a hook has no terminal to
+measure, and a grid with a right-hand border is sheared by one long diagram name
+or a narrow window. A rule with nothing on its right cannot be.
+
+Exit 2 was considered and not used: it puts the text in front of the model and
+blocks the turn from ending. See "Reporting is not the same as being actionable".
+
+The exit code now depends on the caller, which is the one thing to be careful
+about: `--hook` exits 0 because the notice has already been delivered, while a
+bare run exits non-zero so CI and pre-commit can fail on it. Both are pinned by
+tests; getting them backwards either loses the report or fails a build over a
+diagram.
 
 ## Reporting is not the same as being actionable
 

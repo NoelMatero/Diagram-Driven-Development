@@ -1,15 +1,42 @@
 {
   "name": "board-ai",
   "version": "0.1.0",
-  "private": true,
   "description": "Diagram-driven development: an MCP server that gives Claude read/write access to Excalidraw diagrams that live in the repo, plus a live local board.",
+  "keywords": [
+    "diagram",
+    "excalidraw",
+    "architecture",
+    "documentation",
+    "mcp",
+    "claude"
+  ],
+  "license": "MIT",
+  "author": "Noel Matero (https://github.com/NoelMatero)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NoelMatero/Diagram-Driven-Development.git"
+  },
+  "homepage": "https://github.com/NoelMatero/Diagram-Driven-Development#readme",
   "type": "module",
+  "bin": {
+    "board-ai": "out/cli/server.mjs",
+    "board-drift": "out/cli/drift.mjs"
+  },
+  "files": [
+    "out/cli/",
+    "out/viewer/",
+    "vendor/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "mcp": "tsx src/mcp/server.ts",
     "board": "tsx scripts/board.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
     "build:viewer": "vite build --config vite.viewer.config.ts",
-    "postinstall": "node scripts/build-vendor.mjs && npm run build:viewer",
+    "build:cli": "node scripts/build-cli.mjs",
+    "build": "npm run build:vendor && npm run build:viewer && npm run build:cli",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit",
     "check:drift": "tsx scripts/check-drift.mjs",
     "test": "vitest run",
@@ -22,6 +49,8 @@
     "@excalidraw/excalidraw": "0.18.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "elkjs": "0.11.0",
+    "fontkit": "^2.0.4",
+    "playwright-core": "1.61.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zod": "4.3.6"
@@ -33,8 +62,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
     "esbuild": "0.25.12",
-    "fontkit": "^2.0.4",
-    "playwright": "^1.61.1",
+    "playwright": "1.61.1",
     "tsx": "^4.23.1",
     "typescript": "5.9.3",
     "vite": "7.3.1",

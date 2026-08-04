@@ -13,8 +13,9 @@
   "license": "MIT",
   "mcpServers": {
     "board": {
+      "//": "From npm, not from ${CLAUDE_PLUGIN_ROOT}: installing a plugin copies files into a cache without running npm install, so the sources here have no dependencies and no build output. Version pinned to this manifest's version so a cached plugin cannot silently pick up a newer server.",
       "command": "npx",
-      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/src/mcp/server.ts"],
+      "args": ["-y", "board-ai@0.1.0"],
       "env": {
         "BOARD_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
       }

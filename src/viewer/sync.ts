@@ -39,6 +39,27 @@ export interface SyncHandlers {
 
 const SAVE_DEBOUNCE_MS = 400;
 
+/**
+ * The board this page is pinned to, from `?file=` in its own address, or nothing
+ * when the page is on the bare URL and should follow whichever board is current.
+ *
+ * Pinning is what lets two diagrams be open side by side: each page keeps asking
+ * for its own file, so a tool writing the other one cannot pull it off the board
+ * the human is looking at.
+ */
+function pinnedBoard(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get("file");
+  } catch {
+    return null;
+  }
+}
+
+function withBoard(path: string): string {
+  const pinned = pinnedBoard();
+  return pinned ? `${path}?file=${encodeURIComponent(pinned)}` : path;
+}
+
 /** Identity plus mutation counter: enough to tell a real edit from a selection. */
 function fingerprint(elements: Array<Record<string, unknown>>): string {
   return elements.map((element) => `${element.id}:${element.version ?? 0}`).join(",");
@@ -81,7 +102,7 @@ export class BoardSync {
   async start(): Promise<void> {
     this.handlers.onStatus("connecting");
     await this.pull();
-    this.#events = new EventSource("/api/events");
+    this.#events = new EventSource(withBoard("/api/events"));
     this.#events.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data) as { type?: string; revision?: string; file?: string };
@@ -106,7 +127,7 @@ export class BoardSync {
 
   async pull(): Promise<void> {
     try {
-      const response = await fetch("/api/board", { cache: "no-store" });
+      const response = await fetch(withBoard("/api/board"), { cache: "no-store" });
       if (!response.ok) throw new Error(`GET /api/board -> ${response.status}`);
       const payload = (await response.json()) as {
         revision: string;
@@ -179,7 +200,7 @@ export class BoardSync {
     this.#inFlight = true;
     this.handlers.onStatus("saving");
     try {
-      const response = await fetch("/api/board", {
+      const response = await fetch(withBoard("/api/board"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ revision: this.#revision, board }),

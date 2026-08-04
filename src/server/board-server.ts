@@ -81,15 +81,24 @@ export interface BoardServerOptions {
 }
 
 export interface RunningBoardServer {
+  /** The follow view: shows whichever board is current, and follows setFile. */
   url: string;
   port: number;
-  /** The board currently being served. Changes via setFile. */
+  /** The board the follow view is showing. Changes via setFile. */
   readonly file: string;
   /**
-   * Points the live page at a different board. Done in place rather than by
+   * Points the follow view at a different board. Done in place rather than by
    * restarting, so open pages keep their connection and simply follow along.
+   * Pages pinned to a specific board with `?file=` are deliberately unaffected.
    */
   setFile(next: string): Promise<void>;
+  /**
+   * A URL pinned to one board. Two of these opened side by side stay on their
+   * own file no matter what any tool writes, which is the point of them.
+   */
+  urlFor(file: string): string;
+  /** Boards this server has been asked for, current one first. */
+  boards(): string[];
   close(): Promise<void>;
 }
 
@@ -114,31 +123,61 @@ function json(response: ServerResponse, status: number, payload: unknown): void 
   response.end(body);
 }
 
+/** Per-board state. One of these exists for every board anyone has asked for. */
+interface BoardState {
+  revision: string;
+  /** Pages pinned to this board with `?file=`. */
+  subscribers: Subscriber[];
+  debounce?: NodeJS.Timeout;
+}
+
 export async function startBoardServer(options: BoardServerOptions): Promise<RunningBoardServer> {
   let file = path.resolve(options.file);
   const host = options.host ?? "127.0.0.1";
+  const root = options.root ? path.resolve(options.root) : undefined;
 
-  let subscribers: Subscriber[] = [];
   let nextSubscriberId = 0;
-  let currentRevision = revisionOf(await readBoard(file));
+  /**
+   * Every board this server has been asked for, by absolute path. Several can be
+   * live at once: a project split across diagrams wants them side by side, and
+   * one server on one port beats a scatter of ports nobody can keep track of.
+   */
+  const boards = new Map<string, BoardState>();
+  /**
+   * Pages on the bare URL, with no board named. They show whichever board is
+   * current and follow setFile, which is what every tool that writes a diagram
+   * relies on to bring it on screen.
+   */
+  let followers: Subscriber[] = [];
+  // One watcher per directory rather than per board: boards usually share a
+  // directory, and watching it twice would deliver every event twice.
+  const watchers = new Map<string, FSWatcher>();
 
-  const broadcast = (revision: string, extra: Record<string, unknown> = {}) => {
-    const frame = `data: ${JSON.stringify({ type: "board", revision, file, ...extra })}\n\n`;
+  const write = (subscribers: Subscriber[], payload: Record<string, unknown>) => {
+    const frame = `data: ${JSON.stringify(payload)}\n\n`;
     for (const subscriber of subscribers) subscriber.response.write(frame);
+  };
+
+  /** Tells everyone watching `target` about it: pinned pages, and followers when it is current. */
+  const announce = (target: string, revision: string, extra: Record<string, unknown> = {}) => {
+    const state = boards.get(target);
+    if (state) write(state.subscribers, { type: "board", revision, file: target, ...extra });
+    if (target === file) write(followers, { type: "board", revision, file: target, ...extra });
   };
 
   // Editors and our own writes both land as rename or change events, and
   // several can arrive for one logical save, so debounce and compare hashes
   // rather than trusting the event itself.
-  let debounce: NodeJS.Timeout | undefined;
-  const onFileEvent = () => {
-    if (debounce) clearTimeout(debounce);
-    debounce = setTimeout(async () => {
+  const onFileEvent = (target: string) => {
+    const state = boards.get(target);
+    if (!state) return;
+    if (state.debounce) clearTimeout(state.debounce);
+    state.debounce = setTimeout(async () => {
       try {
-        const revision = revisionOf(await readBoard(file));
-        if (revision === currentRevision) return;
-        currentRevision = revision;
-        broadcast(revision);
+        const revision = revisionOf(await readBoard(target));
+        if (revision === state.revision) return;
+        state.revision = revision;
+        announce(target, revision);
       } catch {
         // A partially written file will fire again when the write completes.
       }
@@ -147,30 +186,75 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
 
   // Watch the directory, not just the file: atomic saves replace the inode and
   // a file-level watcher goes deaf after the first one.
-  let watcher: FSWatcher | undefined;
-  const startWatching = () => {
-    watcher?.close();
-    watcher = undefined;
+  const watchDirectory = (directory: string) => {
+    if (watchers.has(directory)) return;
     try {
-      watcher = watch(path.dirname(file), (_event, name) => {
-        if (!name || path.basename(String(name)) === path.basename(file)) onFileEvent();
+      const watcher = watch(directory, (_event, name) => {
+        if (!name) {
+          // No filename: check every board in this directory.
+          for (const target of boards.keys()) {
+            if (path.dirname(target) === directory) onFileEvent(target);
+          }
+          return;
+        }
+        const target = path.join(directory, path.basename(String(name)));
+        if (boards.has(target)) onFileEvent(target);
       });
+      watchers.set(directory, watcher);
     } catch {
       // Without a watcher the browser still polls on reconnect; liveness
       // degrades but nothing breaks.
     }
   };
-  startWatching();
+
+  /** Starts tracking a board, so it can be served and watched. */
+  const track = async (target: string): Promise<BoardState> => {
+    const existing = boards.get(target);
+    if (existing) return existing;
+    const state: BoardState = { revision: revisionOf(await readBoard(target)), subscribers: [] };
+    boards.set(target, state);
+    watchDirectory(path.dirname(target));
+    return state;
+  };
+
+  await track(file);
 
   const setFile = async (next: string): Promise<void> => {
     const resolved = path.resolve(next);
     if (resolved === file) return;
+    const state = await track(resolved);
     file = resolved;
-    startWatching();
-    currentRevision = revisionOf(await readBoard(file));
     // switchedFile tells the page this is a different document, so it reframes
-    // rather than assuming the old viewport still means anything.
-    broadcast(currentRevision, { switchedFile: true });
+    // rather than assuming the old viewport still means anything. Only followers
+    // hear it; a pinned page has not switched to anything.
+    write(followers, { type: "board", revision: state.revision, file, switchedFile: true });
+  };
+
+  /**
+   * Which board a request is about: `?file=` when given, the current one
+   * otherwise. Relative paths resolve against the root, and anything outside it
+   * is refused — the query string is as much an untrusted input as the
+   * takeover endpoint's body.
+   */
+  const requestedFile = (url: URL): { file?: string; error?: string } => {
+    const raw = url.searchParams.get("file");
+    if (!raw) return { file };
+    const resolved = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(root ?? ROOT, raw);
+    if (root) {
+      const relative = path.relative(root, resolved);
+      if (relative.startsWith("..") || path.isAbsolute(relative)) {
+        return { error: `file is outside the board root (${root})` };
+      }
+    }
+    return { file: resolved };
+  };
+
+  /** How a pinned URL names a board: relative to the root when there is one. */
+  const nameFor = (target: string) => {
+    const resolved = path.resolve(target);
+    if (!root) return resolved;
+    const relative = path.relative(root, resolved);
+    return relative.startsWith("..") || path.isAbsolute(relative) ? resolved : relative;
   };
 
   const serveViewer = async (response: ServerResponse, pathname: string) => {
@@ -202,7 +286,17 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
       const url = new URL(request.url ?? "/", `http://${host}`);
 
       if (url.pathname === "/api/health") {
-        return json(response, 200, { ok: true, file, revision: currentRevision, pid: process.pid });
+        return json(response, 200, {
+          ok: true,
+          file,
+          revision: boards.get(file)?.revision,
+          pid: process.pid,
+          // Tells another process that `?file=` is understood here. Without it a
+          // newer session would hand out pinned URLs to an older server, which
+          // ignores the query and silently serves the wrong board.
+          multiBoard: true,
+          boards: [...boards.keys()],
+        });
       }
 
       /*
@@ -217,7 +311,6 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
           return json(response, 400, { error: "file is required" });
         }
         const requested = path.resolve(payload.file);
-        const root = options.root ? path.resolve(options.root) : undefined;
         if (root) {
           const relative = path.relative(root, requested);
           if (relative.startsWith("..") || path.isAbsolute(relative)) {
@@ -232,12 +325,20 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
       }
 
       if (request.method === "GET" && url.pathname === "/api/board") {
-        const board = await readBoard(file);
-        currentRevision = revisionOf(board);
-        return json(response, 200, { revision: currentRevision, board, file });
+        const target = requestedFile(url);
+        if (!target.file) return json(response, 403, { error: target.error });
+        if (!(await fileExists(target.file))) {
+          return json(response, 404, { error: `no such file: ${target.file}` });
+        }
+        const state = await track(target.file);
+        const board = await readBoard(target.file);
+        state.revision = revisionOf(board);
+        return json(response, 200, { revision: state.revision, board, file: target.file });
       }
 
       if (request.method === "POST" && url.pathname === "/api/board") {
+        const target = requestedFile(url);
+        if (!target.file) return json(response, 403, { error: target.error });
         const payload = JSON.parse(await readBody(request)) as {
           revision?: string;
           board?: BoardFile;
@@ -245,33 +346,47 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
         if (!payload.board || !Array.isArray(payload.board.elements)) {
           return json(response, 400, { error: "board with an elements array is required" });
         }
-        const onDisk = await readBoard(file);
+        const state = await track(target.file);
+        const onDisk = await readBoard(target.file);
         const diskRevision = revisionOf(onDisk);
         if (payload.revision && payload.revision !== diskRevision) {
           // Stale write. Hand back the current board so the browser can merge
           // its own edits over it instead of clobbering or losing them.
           return json(response, 409, { error: "stale revision", revision: diskRevision, board: onDisk });
         }
-        await writeBoard(file, payload.board);
-        currentRevision = revisionOf(payload.board);
-        broadcast(currentRevision);
-        return json(response, 200, { revision: currentRevision });
+        await writeBoard(target.file, payload.board);
+        state.revision = revisionOf(payload.board);
+        announce(target.file, state.revision);
+        return json(response, 200, { revision: state.revision });
       }
 
       if (request.method === "GET" && url.pathname === "/api/events") {
+        const target = requestedFile(url);
+        if (!target.file) return json(response, 403, { error: target.error });
+        // A stream named a board explicitly: pin it, so nothing re-points it.
+        const pinned = url.searchParams.has("file");
+        const state = await track(target.file);
+
         response.writeHead(200, {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-store",
           Connection: "keep-alive",
         });
-        response.write(`data: ${JSON.stringify({ type: "board", revision: currentRevision, file })}\n\n`);
+        response.write(
+          `data: ${JSON.stringify({ type: "board", revision: state.revision, file: target.file })}\n\n`,
+        );
         const subscriber = { response, id: ++nextSubscriberId };
-        subscribers.push(subscriber);
+        if (pinned) state.subscribers.push(subscriber);
+        else followers.push(subscriber);
         // Proxies drop idle streams; a periodic comment keeps it warm.
         const keepAlive = setInterval(() => response.write(": ping\n\n"), 25_000);
         request.on("close", () => {
           clearInterval(keepAlive);
-          subscribers = subscribers.filter((candidate) => candidate.id !== subscriber.id);
+          if (pinned) {
+            state.subscribers = state.subscribers.filter((candidate) => candidate.id !== subscriber.id);
+          } else {
+            followers = followers.filter((candidate) => candidate.id !== subscriber.id);
+          }
         });
         return undefined;
       }
@@ -300,28 +415,55 @@ export async function startBoardServer(options: BoardServerOptions): Promise<Run
       return file;
     },
     setFile,
+    urlFor(target: string) {
+      return `http://${host}:${port}/?file=${encodeURIComponent(nameFor(target))}`;
+    },
+    boards() {
+      return [file, ...[...boards.keys()].filter((candidate) => candidate !== file)];
+    },
     async close() {
-      watcher?.close();
-      if (debounce) clearTimeout(debounce);
-      for (const subscriber of subscribers) subscriber.response.end();
-      subscribers = [];
+      for (const watcher of watchers.values()) watcher.close();
+      watchers.clear();
+      for (const state of boards.values()) {
+        if (state.debounce) clearTimeout(state.debounce);
+        for (const subscriber of state.subscribers) subscriber.response.end();
+        state.subscribers = [];
+      }
+      for (const subscriber of followers) subscriber.response.end();
+      followers = [];
       await new Promise<void>((resolve) => server.close(() => resolve()));
     },
   };
 }
 
-/** True when a board server is already serving this file on this port. */
-export async function probeBoardServer(port: number, host = "127.0.0.1"): Promise<string | undefined> {
+export interface BoardProbe {
+  /** The board its follow view is showing. */
+  file?: string;
+  /**
+   * Whether it understands `?file=` pinned URLs. Absent on a server from before
+   * boards could be opened side by side — handing such a server a pinned URL
+   * would look fine and quietly serve whatever board it happens to be on.
+   */
+  multiBoard?: boolean;
+  boards?: string[];
+}
+
+/** What the board server on this port says about itself, if one is there. */
+export async function probeBoard(port: number, host = "127.0.0.1"): Promise<BoardProbe | undefined> {
   try {
     const response = await fetch(`http://${host}:${port}/api/health`, {
       signal: AbortSignal.timeout(500),
     });
     if (!response.ok) return undefined;
-    const payload = (await response.json()) as { file?: string };
-    return payload.file;
+    return (await response.json()) as BoardProbe;
   } catch {
     return undefined;
   }
+}
+
+/** The file a board server is serving on this port, or undefined if none is. */
+export async function probeBoardServer(port: number, host = "127.0.0.1"): Promise<string | undefined> {
+  return (await probeBoard(port, host))?.file;
 }
 
 export async function fileExists(target: string): Promise<boolean> {

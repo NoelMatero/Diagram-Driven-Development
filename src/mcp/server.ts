@@ -28,6 +28,7 @@ import { checkDrift, createWorkspace, DEFAULT_DIAGRAM_DIR, findBoards } from "..
 import { loadConverter } from "../engine/convert";
 import { renderBoardToPng } from "../engine/render";
 import {
+  probeBoard,
   probeBoardServer,
   resolveBoardPort,
   startBoardServer,
@@ -156,6 +157,18 @@ function boardPort(): number {
   return resolveBoardPort(process.env.BOARD_PORT);
 }
 
+/**
+ * A URL pinned to one board on a server this process does not own.
+ *
+ * The absolute path goes in rather than the workspace-relative one: another
+ * session may be rooted somewhere else, and an absolute path either resolves to
+ * the same file or is refused outright. A relative one could quietly resolve to a
+ * different file of the same name in that session's project.
+ */
+function pinnedBoardUrl(port: number, file: string): string {
+  return `http://127.0.0.1:${port}/?file=${encodeURIComponent(file)}`;
+}
+
 /** Asks a board server owned by another process to show this file. */
 async function steerExistingBoard(file: string): Promise<string | undefined> {
   const port = boardPort();
@@ -206,9 +219,11 @@ const server = new McpServer(
       + "one. Read an existing board before editing it. Nodes keep their semantic ids, so refer to "
       + "them by id later. Hand-drawn elements are reported as inferred: treat them as the spec and "
       + "never redraw them.\n"
-      + "The live web view exists only while a board server runs. Use open_board to start it or "
-      + "point it elsewhere, board_status to ask whether one is up. Never give the user a localhost "
-      + "URL you did not get back from one of those two in this session; an address that answers "
+      + "The live web view exists only while a board server runs. Use open_board to start it or to "
+      + "get the URL for another diagram, board_status to ask what is up. Each board has its own "
+      + "URL, so several can be open side by side and opening one never disturbs another; a project "
+      + "split across diagrams is meant to be watched that way. Never give the user a localhost URL "
+      + "you did not get back from one of those two in this session; an address that answers "
       + "nothing is worse than none.",
   },
 );
@@ -643,8 +658,8 @@ server.registerTool(
   {
     title: "Board status",
     description:
-      "Whether a live board is running, which file it shows, and its URL. Check before telling the "
-      + "user where to look, and before assuming the live view exists.",
+      "Whether a live board is running, which boards are open and the URL of each. Check before "
+      + "telling the user where to look, and before assuming the live view exists.",
     inputSchema: {},
   },
   async () =>
@@ -652,16 +667,25 @@ server.registerTool(
       // Ask the port rather than trusting our own handle: the board may belong
       // to another session, and ours may have been superseded.
       const port = boardPort();
-      const serving = await probeBoardServer(port);
+      const probe = await probeBoard(port);
+      const serving = probe?.file;
       if (serving === undefined) {
         return text({
           running: false,
           note: "No live board. Call open_board to start one; every other tool works without it.",
         });
       }
+      // Every board with a page of its own, so the model can say which URL shows
+      // what instead of handing over one address for several diagrams.
+      const open = (live?.boards() ?? probe?.boards ?? [serving]).map((file) => ({
+        file: relativeToWorkspace(file),
+        url: pinnedBoardUrl(port, file),
+      }));
       return text({
         running: true,
-        url: `http://127.0.0.1:${port}/`,
+        boards: open,
+        // The bare URL, which follows whichever board was opened or written last.
+        followUrl: `http://127.0.0.1:${port}/`,
         showing: relativeToWorkspace(serving),
         ownedByThisSession: live?.file === serving,
       });
@@ -674,8 +698,10 @@ server.registerTool(
     title: "Open live board",
     description:
       "Open the board in a live local page. It updates the moment any tool writes the file, and "
-      + "what the user draws is saved back, so you both edit the same board. Idempotent: it takes "
-      + "over an existing board rather than starting a second one. Prefer it to a shell command.",
+      + "what the user draws is saved back, so you both edit the same board. Returns a URL pinned to "
+      + "this board: several can be open at once and each stays on its own diagram, so opening a "
+      + "second one does not disturb a page the user is watching. One server serves them all. "
+      + "Prefer it to a shell command.",
     inputSchema: {
       path: z.string(),
       open: z.boolean().default(true).describe("Also launch the system browser"),
@@ -688,14 +714,27 @@ server.registerTool(
       // shows the viewer an error until something writes.
       await writeBoard(file, await readBoard(file));
 
-      // Another session may already hold the port. Steering it is better than
-      // starting a second board the user has to know about.
-      let url = live ? undefined : await steerExistingBoard(file);
+      // Another session may already hold the port. Using its server is better
+      // than starting a second board the user has to know about.
+      let url: string | undefined;
+      if (!live) {
+        const port = boardPort();
+        const probe = await probeBoard(port);
+        if (probe?.multiBoard) {
+          url = pinnedBoardUrl(port, file);
+        } else if (probe) {
+          // Older server: it has no idea about pinned URLs, so the only way to
+          // put this board on screen is to re-point the one page it serves.
+          url = await steerExistingBoard(file);
+        }
+      }
       if (!url) {
         live ??= await startBoardServer({ file, port: boardPort(), root: WORKSPACE_ROOT });
-        await followBoard(file);
-        url = live.url;
+        url = live.urlFor(file);
       }
+      // Keep the bare URL on this board too, so a page opened without one still
+      // shows what was asked for last. Pinned pages are untouched by design.
+      await followBoard(file);
 
       if (open) {
         const { spawn } = await import("node:child_process");

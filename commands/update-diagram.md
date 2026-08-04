@@ -1,5 +1,5 @@
 ---
-description: Redraw the diagrams that have gone stale against the code
+description: Bring diagrams that have gone out of date back in line with the code
 allowed-tools: Bash(npm run check:drift), Bash(npx -y -p board-ai board-drift), mcp__board__check_drift, mcp__board__read_diagram, mcp__board__create_diagram, mcp__board__edit_diagram, mcp__board__delete_diagram, Read, Grep, Glob
 ---
 

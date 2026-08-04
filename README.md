@@ -162,7 +162,7 @@ npm run check:drift docs/diagrams/architecture.excalidraw
 Silent when nothing has drifted, exit 1 with a report when a node points at a
 file or symbol that is gone — which is what CI and pre-commit want.
 
-When something has drifted, `/fix-drift` redraws it: Claude re-runs the check,
+When something has drifted, `/update-diagram` redraws it: Claude re-runs the check,
 repoints the boxes whose code moved, removes the ones whose code is gone, and
 tells you which was which. It asks rather than guesses about hand-drawn boxes,
 whose refs were inferred from their labels.

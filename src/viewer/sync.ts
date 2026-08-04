@@ -50,6 +50,15 @@ function elementMap(elements: Array<Record<string, unknown>>): Map<string, Recor
 
 export class BoardSync {
   #revision = "";
+  /**
+   * The board the server last told us it is serving. Tracked separately from the
+   * revision because the revision is a hash of the *content*: pointing the
+   * server at a different file that happens to hold the same elements produces
+   * the same revision, and the page would keep naming the old file while showing
+   * the new one. Measured: switching between two identical copies left the pill
+   * on the previous filename, reading `live`.
+   */
+  #file = "";
   #lastSynced = new Map<string, Record<string, unknown>>();
   #lastSentFingerprint = "";
   #pending?: BoardPayload;
@@ -75,10 +84,12 @@ export class BoardSync {
     this.#events = new EventSource("/api/events");
     this.#events.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data) as { type?: string; revision?: string };
+        const payload = JSON.parse(event.data) as { type?: string; revision?: string; file?: string };
         if (payload.type !== "board" || !payload.revision) return;
-        // Our own save echoes back; only a genuinely newer revision matters.
-        if (payload.revision === this.#revision) return;
+        // Our own save echoes back; only a genuinely newer revision matters --
+        // or a different file, which can carry an identical revision.
+        const sameFile = payload.file === undefined || payload.file === this.#file;
+        if (payload.revision === this.#revision && sameFile) return;
         void this.pull();
       } catch {
         // Ignore malformed frames; the next one will be fine.
@@ -114,6 +125,7 @@ export class BoardSync {
       this.#pending = undefined;
 
       this.#revision = payload.revision;
+      this.#file = payload.file ?? "";
       this.#lastSynced = elementMap(payload.board.elements);
       this.#lastSentFingerprint = fingerprint(payload.board.elements);
       this.handlers.onRemoteBoard(payload.board, { file: payload.file, wholesale });

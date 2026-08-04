@@ -15,11 +15,14 @@ body,
   height: 100%;
 }
 
-/* Sits above the Excalidraw UI layer without stealing pointer events. */
+/* Sits above the Excalidraw UI layer without stealing pointer events.
+   Raised clear of the bottom-right corner, which is Excalidraw's own: the Help
+   button and the zen-mode exit live there, and at bottom: 14px this pill covered
+   both (measured: pill 1096-1266 x 759-786, Help 1228-1264 x 748-784). */
 .status {
   position: fixed;
   right: 14px;
-  bottom: 14px;
+  bottom: 62px;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -67,4 +70,10 @@ body,
   color: #868e96;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
+}
+
+/* Shown while disconnected: the last filename we were told, not a fact. */
+.status-file-stale {
+  font-style: italic;
+  opacity: 55%;
 }

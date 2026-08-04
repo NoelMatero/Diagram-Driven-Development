@@ -125,13 +125,39 @@ the report was written to apologise for the "Stop hook error" framing — a chec
 that had to explain it was not broken every time it spoke. It isn't necessary.
 
 What survives inside a `systemMessage`, measured the same way: newlines,
-indentation, box-drawing characters, and symbols like `→` and `·`. ANSI colour
-does **not** — it is stripped, cleanly, so emitting it buys nothing. Markdown
-appears to arrive literally, so `**bold**` shows its asterisks.
+indentation, box-drawing characters, symbols, **and ANSI colour**. Markdown
+arrives literally, so `**bold**` shows its asterisks.
 
-Hence rules rather than a bordered box in the notice: a hook has no terminal to
-measure, and a grid with a right-hand border is sheared by one long diagram name
-or a narrow window. A rule with nothing on its right cannot be.
+Colour took two rounds to establish, and the first answer was wrong. A probe put
+escapes in a notice and the reply came back as pasted text — where colour is
+invisible either way — which was read as "stripped". It is not: red and yellow
+render. The report therefore carries severity in colour, not in emoji, which
+matters for more than looks: an escape sequence occupies zero cells, while `⚠️` is
+*ambiguous* width (one cell in some terminals, two in others) and sheared every
+padded row it appeared in.
+
+`/expand-report` leaves the notice expanded from then on, and `/shrink-report` puts
+it back. That is a mode, which is normally the wrong answer — but a command runs
+*during* a turn and the notice is written by the hook *after* it, so affecting a
+later notice can only be done by leaving something behind. It is a marker file in
+`.board-ai/` (gitignored, so it is one person's preference and not the repo's), and
+the objection to modes is answered by the notice itself: while expanded, its footer
+names `/shrink-report`. Nothing is remembered that the notice does not say out loud.
+`--details` remains the one-off that changes nothing.
+
+The notice is a box, kept to four lines for a single stale diagram: the diagram and
+its counts ride in the top border, `/update-diagram` rides in the bottom, and there
+is no legend — a symbol needing a footnote every turn is the wrong symbol. Several
+stale diagrams get a line each with their own counts rather than a box each.
+
+The message begins with a newline. Claude Code prefixes the first line
+("Stop says: …"), which pushed the top border right by the width of that prefix and
+left the box visibly crooked.
+
+Long names are cut with an ellipsis rather than allowed to stretch the border, and
+`tests/box.test.ts` pins the arithmetic: every line of a rendered box comes out the
+same display width, colour counts as zero cells, and arrows and box-drawing
+characters count as one.
 
 Exit 2 was considered and not used: it puts the text in front of the model and
 blocks the turn from ending. See "Reporting is not the same as being actionable".

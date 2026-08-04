@@ -8,7 +8,7 @@
  * useful, and the guidance line was previously printed only to a terminal, so
  * from a hook — the way it actually runs — nobody ever saw it.
  */
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -147,13 +147,18 @@ describe("unsupported edges on the command line", () => {
     if (project) rmSync(project, { recursive: true, force: true });
   });
 
-  it("flags the arrow, names both boxes, and only calls it worth a look", async () => {
+  it("flags the arrow, names both boxes, and never calls it wrong", async () => {
     const result = await check();
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("edges.excalidraw");
     expect(result.stderr).toContain("Left");
     expect(result.stderr).toContain("Right");
-    expect(result.stderr).toContain("worth a look");
+    // An unsupported arrow is a suspicion, not a verdict. The notice carries that
+    // in colour rather than in a sentence repeated every turn, and says "arrow",
+    // never "wrong".
+    expect(result.stderr).toContain("1 arrow");
+    expect(result.stderr).not.toContain("gone");
+    expect(result.stderr.toLowerCase()).not.toContain("wrong");
   }, 120_000);
 
   it("--no-edges turns off just this check, and the report goes quiet", async () => {
@@ -208,18 +213,25 @@ describe("a report with many findings stays readable", () => {
     if (project) rmSync(project, { recursive: true, force: true });
   });
 
-  it("explains why once, not once per arrow", () => {
-    const explanations = stderr.match(/no shared importer/g) ?? [];
-    expect(explanations).toHaveLength(1);
+  it("does not explain itself at all — the marker carries it", () => {
+    // This fires at the end of every turn. The explanation was printed once per
+    // arrow (2360 characters for twelve), then once per report, and is now in the
+    // documentation where it is read once.
+    expect(stderr).not.toContain("no shared importer");
+    expect(stderr).not.toContain("worth a look");
+    // And no colour when the output is captured: escapes in a log or a CI
+    // transcript are noise.
+    expect(stderr).not.toContain("\\u001b[");
   });
 
   it("counts every finding even though it lists only the first few", () => {
-    expect(stderr).toContain("12 arrows");
+    // The count rides in the heading: "many.excalidraw  12 arrows".
+    expect(stderr).toMatch(/12 arrows/);
     expect(stderr).toMatch(/… and \d+ more/);
     // The count in the heading is what makes trimming honest rather than hiding.
     // Arrow lines are indented under their heading; the exact indent is the
     // format's business, the count is the contract.
-    const listed = (stderr.match(/^\s+A\s+→\s+\S/gm) ?? []).length;
+    const listed = (stderr.match(/│ A → /g) ?? []).length;
     const hidden = Number(/… and (\d+) more/.exec(stderr)?.[1] ?? 0);
     expect(listed + hidden).toBe(12);
   });
@@ -304,4 +316,294 @@ describe("the hook channel", () => {
       rmSync(clean, { recursive: true, force: true });
     }
   }, 120_000);
+});
+
+/**
+ * Colour, and where it is allowed to go.
+ *
+ * ANSI does render inside a Claude Code systemMessage — measured by putting real
+ * escapes in one and looking, after an earlier round concluded the opposite from a
+ * copy-paste, where colour is invisible either way. That is why severity is colour
+ * and not emoji: colour occupies no cells and cannot shear a padded row, while
+ * `⚠️` is ambiguous-width and did.
+ *
+ * It must not reach a pipe though, and that is the half a test can check.
+ */
+describe("colour", () => {
+  const RED = "\u001b[31m";
+  let project: string;
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-colour-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name: "colour",
+      nodes: [{ id: "gone", label: "Old Cache", ref: "src/cache.ts" }],
+      edges: [],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/colour.excalidraw"), drawn);
+  }, 120_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("paints the notice, because the notice renders it", async () => {
+    const { stdout } = await run(TSX, [SCRIPT, "--hook"], { cwd: project });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    expect(payload.systemMessage).toContain(RED);
+  }, 120_000);
+
+  it("leaves captured output plain", async () => {
+    try {
+      await run(TSX, [SCRIPT], { cwd: project });
+      throw new Error("expected a non-zero exit");
+    } catch (error) {
+      const failure = error as { stderr?: string };
+      expect(failure.stderr).toContain("Old Cache");
+      expect(failure.stderr).not.toContain("\u001b[");
+    }
+  }, 120_000);
+
+  it("switches to the notice when hook JSON arrives on stdin, with no flag", () => {
+    // execFile ignores `input`; only the sync form actually writes to stdin, which
+    // is why an earlier version of this test proved nothing.
+    const stdout = execFileSync(TSX, [SCRIPT], {
+      cwd: project,
+      input: JSON.stringify({ hook_event_name: "Stop", session_id: "test" }),
+      encoding: "utf8",
+    });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    // The flag is a trap otherwise: forget it and the report comes back wrapped in
+    // "Stop hook error: Failed", which reads as a broken tool rather than a finding.
+    expect(payload.systemMessage).toContain("Old Cache");
+  }, 120_000);
+
+  it("survives stdin being /dev/null rather than a pipe", () => {
+    // process.stdin is a socket when piped and an fs stream when redirected from a
+    // file or /dev/null, and only the socket has unref(). Every test here used a
+    // pipe, so a crash on the other shape went unnoticed until a shell ran it.
+    const stdout = execFileSync(TSX, [SCRIPT, "--hook"], {
+      cwd: project,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+    });
+    expect(JSON.parse(stdout).systemMessage).toContain("Old Cache");
+  }, 120_000);
+
+  it("starts the notice on its own line, so the harness prefix cannot shift the border", async () => {
+    const { stdout } = await run(TSX, [SCRIPT, "--hook"], { cwd: project });
+    const payload = JSON.parse(stdout) as { systemMessage: string };
+    // "Stop says: ┌───" pushed the top border right by the width of that prefix.
+    expect(payload.systemMessage.startsWith("\n")).toBe(true);
+  }, 120_000);
+});
+
+/**
+ * The expanded view behind `--details`.
+ *
+ * The notice is trimmed because it fires every turn; this is what someone gets when
+ * they ask. What it must not do is grow a second personality: same rows, same
+ * colours, one box per diagram, nothing capped, and the command once at the bottom.
+ */
+describe("--details", () => {
+  const MANY = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"];
+  let project: string;
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-details-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    mkdirSync(path.join(project, "src"), { recursive: true });
+    for (const name of MANY) {
+      writeFileSync(path.join(project, `src/${name}.ts`), `export const ${name} = 1;\n`);
+    }
+    const { board: first } = await createDiagram(emptyBoard(), {
+      name: "one",
+      nodes: MANY.map((name) => ({ id: name, label: name.toUpperCase(), ref: `src/${name}.ts` })),
+      edges: MANY.slice(1).map((name) => ({ from: "a", to: name })),
+    });
+    await writeBoard(path.join(project, "docs/diagrams/one.excalidraw"), first);
+
+    const { board: second } = await createDiagram(emptyBoard(), {
+      name: "two",
+      nodes: [{ id: "gone", label: "Old Cache", ref: "src/cache.ts" }],
+      edges: [],
+    });
+    await writeBoard(path.join(project, "docs/diagrams/two.excalidraw"), second);
+  }, 180_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  function details() {
+    try {
+      execFileSync(TSX, [SCRIPT, "--details"], { cwd: project, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+      return "";
+    } catch (error) {
+      return (error as { stderr?: string }).stderr ?? "";
+    }
+  }
+
+  it("lists every finding, where the notice would have trimmed to six", () => {
+    const out = details();
+    const arrows = (out.match(/│ A → /g) ?? []).length;
+    expect(arrows).toBe(12);
+    expect(out).not.toContain("more");
+  }, 180_000);
+
+  it("gives each diagram its own box, headed by its own counts", () => {
+    const out = details();
+    expect(out).toContain("one.excalidraw");
+    expect(out).toContain("two.excalidraw");
+    expect(out).toContain("12 arrows");
+    expect(out).toContain("1 gone");
+    // One frame, not two boxes: the second diagram is introduced by a divider, so
+    // there is a single top border and a single bottom one.
+    expect((out.match(/┌/g) ?? []).length).toBe(1);
+    expect((out.match(/├/g) ?? []).length).toBe(1);
+    expect((out.match(/└/g) ?? []).length).toBe(1);
+  }, 180_000);
+
+  it("names the command once, under everything", () => {
+    const out = details();
+    expect((out.match(/\/update-diagram/g) ?? []).length).toBe(1);
+    const lines = out.split("\n").filter(Boolean);
+    expect(lines.at(-1)).toContain("/update-diagram");
+  }, 180_000);
+});
+
+/**
+ * How much the notice says, which is deliberately not much.
+ *
+ * One diagram lists what is wrong with it; several list themselves with counts.
+ * The alternative — listing findings whenever they fitted — was built, seen, and
+ * reverted: it made the ordinary two-diagram case longer than the counts it
+ * replaced, in a notice that fires at the end of every turn.
+ */
+describe("how much the notice says", () => {
+  let project: string;
+
+  async function notice() {
+    const stdout = execFileSync(TSX, [SCRIPT, "--hook"], {
+      cwd: project,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+    });
+    return (JSON.parse(stdout) as { systemMessage: string }).systemMessage;
+  }
+
+  beforeAll(() => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-fit-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+  });
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  async function board(name: string, boxes: number) {
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name,
+      nodes: Array.from({ length: boxes }, (_, index) => ({
+        id: `${name}${index}`,
+        label: `${name.toUpperCase()}${index}`,
+        ref: `src/${name}${index}.ts`,
+      })),
+      edges: [],
+    });
+    await writeBoard(path.join(project, `docs/diagrams/${name}.excalidraw`), drawn);
+  }
+
+  it("counts a second diagram rather than listing its findings", async () => {
+    await board("alpha", 2);
+    await board("beta", 2);
+    const message = await notice();
+    // Four findings across two diagrams would fit, and are still not listed: a
+    // notice firing every turn stays short, and /expand-report is there for the
+    // rest. Listing them was tried, and made the common case longer.
+    expect(message).not.toContain("ALPHA0 →");
+    expect(message).toContain("alpha.excalidraw");
+    expect(message).toContain("beta.excalidraw");
+    expect(message).toContain("/expand-report");
+  }, 180_000);
+
+  it("falls back to counts, and points at the fuller view, when they do not", async () => {
+    await board("gamma", 8);
+    const message = await notice();
+    expect(message).toContain("gamma.excalidraw");
+    expect(message).toContain("/expand-report");
+    // Counts per diagram rather than twelve rows of findings.
+    expect(message).toMatch(/8 gone/);
+  }, 180_000);
+});
+
+/**
+ * Expanding as a mode, not a one-off.
+ *
+ * A command cannot reach into a notice the hook has already written, so making
+ * /expand-report affect *later* notices means leaving a preference behind. It lives
+ * in .board-ai/, which is gitignored, so it is one person's and not the repo's.
+ *
+ * The standing objection to a mode is that it is invisible once set. That is
+ * answered by the notice itself: while expanded, it names the way back.
+ */
+describe("expand as a mode", () => {
+  let project: string;
+
+  function run(...args: string[]) {
+    try {
+      return execFileSync(TSX, [SCRIPT, ...args], {
+        cwd: project,
+        stdio: ["ignore", "pipe", "pipe"],
+        encoding: "utf8",
+      });
+    } catch (error) {
+      return (error as { stderr?: string }).stderr ?? "";
+    }
+  }
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-mode-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    for (const name of ["one", "two"]) {
+      const { board: drawn } = await createDiagram(emptyBoard(), {
+        name,
+        nodes: [{ id: `${name}gone`, label: `${name} box`, ref: `src/${name}.ts` }],
+        edges: [],
+      });
+      await writeBoard(path.join(project, `docs/diagrams/${name}.excalidraw`), drawn);
+    }
+  }, 180_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("counts by default, with two diagrams stale", () => {
+    expect(run()).toContain("2 diagrams out of date");
+  }, 180_000);
+
+  it("stays expanded on later runs, and says how to undo it", () => {
+    run("--expand");
+    const next = run();
+    expect(next).toContain("one box →");
+    expect(next).toContain("two box →");
+    // A mode nobody can find the exit from is the thing to avoid.
+    expect(next).toContain("/shrink-report");
+  }, 180_000);
+
+  it("goes back to counts after --shrink, and stays there", () => {
+    run("--shrink");
+    const next = run();
+    expect(next).toContain("2 diagrams out of date");
+    expect(next).not.toContain("one box →");
+  }, 180_000);
+
+  it("--details shows everything without turning the mode on", () => {
+    const once = run("--details");
+    expect(once).toContain("one box →");
+    // The next notice is short again: --details changed nothing.
+    expect(run()).toContain("2 diagrams out of date");
+  }, 180_000);
 });

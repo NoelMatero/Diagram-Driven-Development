@@ -1,0 +1,1 @@
+../../commands/shrink-report.md

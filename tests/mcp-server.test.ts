@@ -170,8 +170,21 @@ describe("board MCP server", () => {
   it("reports whether a live board exists instead of leaving it to be guessed", async () => {
     const status = jsonOf(await call("board_status", {}));
     expect(typeof status.running).toBe("boolean");
-    if (status.running) expect(String(status.url)).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
-    else expect(String(status.note)).toMatch(/open_board/);
+    if (!status.running) {
+      expect(String(status.note)).toMatch(/open_board/);
+      return;
+    }
+    // followUrl is the bare page that follows whichever board was written last.
+    // Every open board also gets its own pinned URL, because handing the user one
+    // address for several diagrams is how they end up looking at the wrong one.
+    expect(String(status.followUrl)).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+    const boards = status.boards as Array<{ file: string; url: string }>;
+    expect(Array.isArray(boards)).toBe(true);
+    expect(boards.length).toBeGreaterThan(0);
+    for (const board of boards) {
+      expect(board.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/\?file=/);
+      expect(board.file).toBeTruthy();
+    }
   }, 60_000);
 
   it("keeps edge colours through a regenerate", async () => {

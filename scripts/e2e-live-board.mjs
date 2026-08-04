@@ -200,6 +200,70 @@ try {
   }).catch(() => undefined);
   check("pill follows a switch to a board with identical content", (await pillText()).includes("twin.excalidraw"), await pillText());
 
+  // 6. Two boards side by side. Each page names its own board in the URL, and the
+  //    point of that is isolation: writing one diagram, or re-pointing the follow
+  //    view, must not drag the other page onto a different file. That is the
+  //    failure the single-board server had by construction.
+  const sideFile = path.join(workspace, "side.excalidraw");
+  const side = await createDiagram(emptyBoard(), {
+    title: "Second diagram",
+    name: "side",
+    nodes: [
+      { id: "ue", label: "UE" },
+      { id: "ims", label: "IMS core" },
+    ],
+    edges: [{ from: "ue", to: "ims", label: "SIP" }],
+  });
+  await writeBoard(sideFile, side.board);
+
+  const pageMain = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  const pageSide = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  await pageMain.goto(server.urlFor(file), { waitUntil: "load" });
+  await pageSide.goto(server.urlFor(sideFile), { waitUntil: "load" });
+  for (const each of [pageMain, pageSide]) {
+    await each.waitForFunction(() => typeof window.__boardScene === "function", undefined, { timeout: 20_000 });
+  }
+  const mainOpened = await waitForScene(pageMain, (value) => value.count > 0 && settled(value));
+  const sideOpened = await waitForScene(pageSide, (value) => value.count > 0 && settled(value));
+  const named = async (each) => await each.$eval(".status-file", (el) => el.textContent);
+  check(
+    "two pinned pages each name their own board",
+    (await named(pageMain)) === path.basename(file) && (await named(pageSide)) === "side.excalidraw",
+    `${await named(pageMain)} | ${await named(pageSide)}`,
+  );
+  check(
+    "each pinned page shows its own diagram",
+    sideOpened.count > 0 && sideOpened.count !== mainOpened.count,
+    `${mainOpened.count} vs ${sideOpened.count} elements`,
+  );
+
+  // Write to one board only. The other page must not so much as flicker.
+  const sideGrown = await connectNodes(await readBoard(sideFile), [
+    { from: "ims", to: "ue", label: "200 OK" },
+  ]);
+  await writeBoard(sideFile, sideGrown.board);
+  const sideGrew = await waitForScene(pageSide, (value) => value.count > sideOpened.count && settled(value));
+  check("a write to one board reaches its own page", sideGrew.count > sideOpened.count, `${sideOpened.count} -> ${sideGrew.count}`);
+  const mainAfter = await scene(pageMain);
+  check(
+    "a write to one board leaves the other page alone",
+    mainAfter.count === mainOpened.count && (await named(pageMain)) === path.basename(file),
+    `${mainOpened.count} -> ${mainAfter.count}, showing ${await named(pageMain)}`,
+  );
+
+  // Re-pointing the follow view is what used to move every open page.
+  await server.setFile(sideFile);
+  await page.waitForTimeout(1500);
+  check(
+    "re-pointing the follow view does not move a pinned page",
+    (await named(pageMain)) === path.basename(file) && (await scene(pageMain)).count === mainOpened.count,
+    `showing ${await named(pageMain)}`,
+  );
+  await pageMain.screenshot({ path: shot("4-pinned-main") });
+  await pageSide.screenshot({ path: shot("5-pinned-side") });
+  await pageMain.close();
+  await pageSide.close();
+
   // The pill must not present a filename as current once the connection is gone:
   // the server may have been re-pointed or replaced, and the page cannot tell.
   await server.close();

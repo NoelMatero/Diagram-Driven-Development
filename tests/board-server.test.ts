@@ -263,3 +263,112 @@ describe("board server", () => {
     expect(health.file).toBe(boardFile);
   });
 });
+
+/**
+ * Several boards at once, so a project split across diagrams can have them side
+ * by side. One server, one port; the page names its board with `?file=`.
+ *
+ * The invariant worth protecting: a pinned page is answerable only to its own
+ * file. Re-pointing the follow view, or writing another diagram, must not move
+ * it -- that would be the old single-board behaviour wearing a new URL.
+ */
+describe("board server serving several boards", () => {
+  const second = () => path.join(workspace, "second.excalidraw");
+  const pinned = (route: string, file: string) => `${api(route)}?file=${encodeURIComponent(file)}`;
+
+  beforeAll(async () => {
+    await writeBoard(second(), boardWith("s1", "s2"));
+  });
+
+  it("serves a board named in the query, not the one it was started on", async () => {
+    const payload = (await (await fetch(pinned("/api/board", second()))).json()) as {
+      board: BoardFile;
+      file: string;
+    };
+    expect(payload.file).toBe(second());
+    expect(payload.board.elements.map((element) => (element as { id: string }).id)).toEqual(["s1", "s2"]);
+  });
+
+  it("keeps each board's revision separate", async () => {
+    const one = (await (await fetch(api("/api/board"))).json()) as { revision: string };
+    const two = (await (await fetch(pinned("/api/board", second()))).json()) as { revision: string };
+    expect(one.revision).not.toBe(two.revision);
+  });
+
+  it("writes to the board named in the query and leaves the other alone", async () => {
+    const before = await readBoard(boardFile);
+    const response = await fetch(pinned("/api/board", second()), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ board: boardWith("s1", "s2", "s3") }),
+    });
+    expect(response.status).toBe(200);
+
+    expect((await readBoard(second())).elements).toHaveLength(3);
+    // The board this server was started on must be untouched.
+    expect((await readBoard(boardFile)).elements).toEqual(before.elements);
+  });
+
+  it("does not move a pinned page when the follow view is re-pointed", async () => {
+    // A pinned stream must hear nothing at all from a switch: the frame it would
+    // hear is the one that makes the page load a different diagram.
+    const controller = new AbortController();
+    const frames: Array<{ file?: string; switchedFile?: boolean }> = [];
+    const stream = (async () => {
+      const response = await fetch(pinned("/api/events", second()), { signal: controller.signal });
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const match of decoder.decode(value, { stream: true }).matchAll(/^data: (.*)$/gm)) {
+          frames.push(JSON.parse(match[1]));
+        }
+      }
+    })().catch(() => undefined);
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const opening = frames.length; // the stream's own opening frame
+    await server.setFile(boardFile);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    controller.abort();
+    await stream;
+
+    expect(server.file).toBe(boardFile);
+    expect(frames.slice(opening)).toEqual([]);
+    // And every frame it did get was about its own board.
+    expect(frames.every((frame) => frame.file === second())).toBe(true);
+  }, 20_000);
+
+  it("refuses a board outside its root", async () => {
+    const response = await fetch(pinned("/api/board", "/etc/passwd"));
+    expect(response.status).toBe(403);
+  });
+
+  it("refuses a query that climbs out of the root", async () => {
+    const response = await fetch(`${api("/api/board")}?file=${encodeURIComponent("../../etc/passwd")}`);
+    expect(response.status).toBe(403);
+  });
+
+  it("404s a board that does not exist rather than serving an empty one", async () => {
+    const response = await fetch(pinned("/api/board", path.join(workspace, "ghost.excalidraw")));
+    expect(response.status).toBe(404);
+  });
+
+  it("advertises that it understands pinned URLs, and lists what is open", async () => {
+    const health = (await (await fetch(api("/api/health"))).json()) as {
+      multiBoard?: boolean;
+      boards?: string[];
+    };
+    // Another session reads this to decide whether a pinned URL is safe to hand
+    // out, or whether it has to re-point an older server's single page instead.
+    expect(health.multiBoard).toBe(true);
+    expect(health.boards).toContain(boardFile);
+    expect(health.boards).toContain(second());
+  });
+
+  it("builds a pinned URL that names the board relative to the root", () => {
+    expect(server.urlFor(second())).toBe(`${server.url}?file=second.excalidraw`);
+    expect(server.boards()[0]).toBe(server.file);
+  });
+});

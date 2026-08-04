@@ -88,9 +88,15 @@ address individual elements in `edit_diagram`.
 diagram being drawn, and anything the user draws is saved back. Offer it when
 someone wants to watch or join in.
 
-`board_status` says whether one is running and which file it shows. Never give
-the user a localhost URL you did not get back from one of those two tools in this
-session — an address that answers nothing is worse than none.
+Each board gets its own URL, served by one local server. Opening a second diagram
+leaves the first page where it is, so a project split across several diagrams can
+have them open side by side — call `open_board` once per diagram and give the user
+both addresses rather than one that changes under them.
+
+`board_status` says what is running: every open board with its own URL, and which
+one the bare address is currently following. Never give the user a localhost URL
+you did not get back from one of those two tools in this session — an address that
+answers nothing is worse than none.
 
 ## Model choice
 

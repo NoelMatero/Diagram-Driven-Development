@@ -118,6 +118,17 @@ A local page on `127.0.0.1:4747` showing the file. Anything that writes it — a
 
 Conflicts resolve in your favour. A save carrying a stale revision is refused with the current board attached, so an agent write cannot discard a stroke you just made.
 
+**Several diagrams at once.** One server serves them all; the page says which board it wants:
+
+```
+127.0.0.1:4747/?file=docs/diagrams/ims.excalidraw
+127.0.0.1:4747/?file=docs/diagrams/volte.excalidraw
+```
+
+Open two and they stay put — writing one diagram, or asking Claude to open a third, never drags a page onto a different file. That is what makes splitting a large system across diagrams workable rather than a constant flick between them. `open_board` returns the pinned URL for whatever it opened, and `board_status` lists every open board with its own address.
+
+The bare `127.0.0.1:4747` behaves as it always has: it follows whichever board was opened or written last, which is what you want when you are working on one diagram and letting Claude drive.
+
 ## Development
 
 ```bash

@@ -302,6 +302,40 @@ Three checks added to `npm run test:e2e:board`, all of which fail without the
 change: follows a switch to identical content, marks the filename stale once
 disconnected, does not cover Excalidraw's own controls.
 
+## Phase 6 — several boards live at once — DONE
+
+Asked for while planning a telecom project split across diagrams. Note what was
+*not* the problem: many diagram files always worked. Only viewing two at once did
+not, because the server held a single `file` and every page shared it.
+
+**One server, the board named in the page's own URL** —
+`?file=docs/diagrams/ims.excalidraw`. Rejected: a server per board on its own
+port, which scatters addresses nobody can match to a diagram and leaves servers
+running that everyone has forgotten.
+
+- `src/server/board-server.ts` keys state by absolute path: revision, its own SSE
+  subscribers, its own debounce. Watchers are per *directory*, deduped, or boards
+  sharing a directory would deliver every event twice.
+- **The bare URL is unchanged on purpose.** It stays the follow view: it shows
+  whichever board is current and follows `setFile`, which is what every tool that
+  writes a diagram relies on to bring it on screen. Pinned pages never follow.
+  Both behaviours, no regression.
+- `?file=` is untrusted input like any other: relative paths resolve against the
+  root, anything climbing out is 403, a board that does not exist is 404.
+- `/api/health` reports `multiBoard: true`. Another session reads it before
+  handing out a pinned URL — an older server ignores the query string and would
+  serve whatever board it happened to be on, silently. Where the flag is absent,
+  `open_board` falls back to re-pointing that server's single page.
+- Pinned URLs across processes carry the **absolute** path. A relative one could
+  resolve against another session's root and quietly hit a different file with the
+  same name.
+
+Verified: 9 server tests (independent revisions, writes isolated, a pinned SSE
+stream hearing *nothing* from a re-point, confinement, 404, the health flag) and
+5 in `npm run test:e2e:board` driving two real pinned pages — each names its own
+board, a write reaches only its own page, and re-pointing the follow view leaves
+the other alone.
+
 ## How to verify anything in this project
 
 ```bash

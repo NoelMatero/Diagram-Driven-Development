@@ -64,13 +64,36 @@ function describe(finding) {
 }
 
 /**
- * One plain line per unsupported edge. Reader is whoever asked for the diagram,
- * so it names both boxes and explains why nothing in the code connects them.
+ * One arrow, named by the boxes it joins.
+ *
+ * Why nothing connects them is deliberately not here. Every unsupported arrow
+ * fails for the same reason, and repeating a twenty-word explanation once per
+ * arrow buries the arrows it is meant to be showing — twelve of them turned the
+ * report into a wall nobody reads to the end. The reason is printed once, as the
+ * heading above the list.
  */
 function describeEdge(finding) {
-  const fromBox = `"${(finding.fromLabel || finding.from).replace(/\s+/g, " ")}"`;
-  const toBox = `"${(finding.toLabel || finding.to).replace(/\s+/g, " ")}"`;
-  return `${fromBox} → ${toBox} — ${finding.detail}`;
+  const fromBox = (finding.fromLabel || finding.from).replace(/\s+/g, " ");
+  const toBox = (finding.toLabel || finding.to).replace(/\s+/g, " ");
+  return `${fromBox} → ${toBox}`;
+}
+
+/** Listed in full up to here; beyond it the remainder is counted instead. */
+const MAX_LISTED = 8;
+
+/**
+ * A counted group under one heading.
+ *
+ * The heading carries the total, so showing eight of twelve hides nothing: the
+ * reader is told there are twelve. Silent truncation would be the unacceptable
+ * version of this.
+ */
+function group(heading, lines) {
+  if (lines.length === 0) return;
+  console.error(`  ${lines.length} ${heading}`);
+  for (const line of lines.slice(0, MAX_LISTED)) console.error(`    ${line}`);
+  const hidden = lines.length - MAX_LISTED;
+  if (hidden > 0) console.error(`    … and ${hidden} more`);
 }
 
 const { boards, opts } = parseArgs();
@@ -93,8 +116,12 @@ for (const file of await boardsToCheck(boards)) {
   // A project holds several diagrams, and a Stop hook swallows the start of the
   // first line, so the file has to be named where the eye lands after that.
   console.error(`diagram out of date — ${path.basename(file)}`);
-  for (const finding of report.findings) console.error(`  ${describe(finding)}`);
-  for (const finding of report.edges) console.error(`  ${describeEdge(finding)}`);
+  group("boxes point at code that is gone:", report.findings.map(describe));
+  group(
+    "arrows with nothing in the code behind them — worth a look, not necessarily"
+    + "\n  wrong (no import either way, no shared importer, no shared route string):",
+    report.edges.map(describeEdge),
+  );
 }
 
 if (drifted > 0) {

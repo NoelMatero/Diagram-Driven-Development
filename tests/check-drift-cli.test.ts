@@ -165,3 +165,65 @@ describe("unsupported edges on the command line", () => {
     expect(`${result.stdout}${result.stderr}`.trim()).toBe("");
   }, 120_000);
 });
+
+/**
+ * How a report with a lot in it reads.
+ *
+ * The failure this guards against is not wrongness, it is length: every
+ * unsupported arrow fails for the same reason, and printing that reason once per
+ * arrow produced a wall of near-identical lines — 2360 characters for twelve
+ * arrows, measured — which is a report nobody reads to the end. Saying it once
+ * and listing the arrows brings the same information to 477.
+ */
+describe("a report with many findings stays readable", () => {
+  const NAMES = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"];
+  let project: string;
+  let stderr: string;
+
+  beforeAll(async () => {
+    project = mkdtempSync(path.join(tmpdir(), "drift-cli-many-"));
+    mkdirSync(path.join(project, "docs/diagrams"), { recursive: true });
+    mkdirSync(path.join(project, "src"), { recursive: true });
+    // Every file exists and none of them touch each other, so all twelve arrows
+    // are flagged and the missing-file check stays quiet.
+    for (const name of NAMES) {
+      writeFileSync(path.join(project, `src/${name}.ts`), `export const ${name} = 1;\n`);
+    }
+    const { board: drawn } = await createDiagram(emptyBoard(), {
+      name: "many",
+      nodes: NAMES.map((name) => ({ id: name, label: name.toUpperCase(), ref: `src/${name}.ts` })),
+      edges: NAMES.slice(1).map((name) => ({ from: "a", to: name })),
+    });
+    await writeBoard(path.join(project, "docs/diagrams/many.excalidraw"), drawn);
+
+    try {
+      await run(TSX, [SCRIPT], { cwd: project });
+      stderr = "";
+    } catch (error) {
+      stderr = (error as { stderr?: string }).stderr ?? "";
+    }
+  }, 180_000);
+
+  afterAll(() => {
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
+
+  it("explains why once, not once per arrow", () => {
+    const explanations = stderr.match(/no shared importer/g) ?? [];
+    expect(explanations).toHaveLength(1);
+  });
+
+  it("counts every finding even though it lists only the first few", () => {
+    expect(stderr).toContain("12 arrows");
+    expect(stderr).toMatch(/… and \d+ more/);
+    // The count in the heading is what makes trimming honest rather than hiding.
+    const listed = (stderr.match(/^ {4}A → /gm) ?? []).length;
+    const hidden = Number(/… and (\d+) more/.exec(stderr)?.[1] ?? 0);
+    expect(listed + hidden).toBe(12);
+  });
+
+  it("stays short enough to read", () => {
+    // The old format spent 2360 characters on this exact case.
+    expect(stderr.length).toBeLessThan(800);
+  });
+});

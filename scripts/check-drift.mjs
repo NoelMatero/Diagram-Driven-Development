@@ -157,19 +157,14 @@ function tallyFor(report, colour) {
  * bottom border of the last box, so it appears once under everything.
  */
 function renderDetails(stale, colour) {
-  const lines = [];
-  stale.forEach((entry, index) => {
-    const last = index === stale.length - 1;
-    lines.push(
-      ...box({
-        head: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
-        foot: last ? "/update-diagram updates the diagram" : "",
-        rows: rowsFor(entry, colour),
-        max: 72,
-      }),
-    );
+  return box({
+    sections: stale.map((entry) => ({
+      label: `${path.basename(entry.file)}  ${tallyFor(entry.report, colour)}`,
+      rows: rowsFor(entry, colour),
+    })),
+    foot: "/update-diagram updates the diagram",
+    max: 72,
   });
-  return lines;
 }
 
 function render(stale, colour) {

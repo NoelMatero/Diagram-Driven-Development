@@ -199,13 +199,16 @@ Several stale diagrams get a line each with their own counts instead, and
 ```
 ┌─ board-internals.excalidraw  1 gone ────────────┐
 │ read back as a graph → src/engine/read-graph.ts │
-└─────────────────────────────────────────────────┘
-┌─ demo-repo.excalidraw  2 gone  1 arrow ────────┐
-│ browser bundle config → vite.browser.config.ts │
-│ font metrics cache → src/engine/font-cache.ts  │
-│ sync loop → PNG render                         │
-└─ /update-diagram updates the diagram ──────────┘
+├─ demo-repo.excalidraw  2 gone  1 arrow ─────────┤
+│ browser bundle config → vite.browser.config.ts  │
+│ font metrics cache → src/engine/font-cache.ts   │
+│ sync loop → PNG render                          │
+└─ /update-diagram updates the diagram ───────────┘
 ```
+
+Both commands are also linked into `.claude/commands/` here, because a plugin's
+`commands/` directory is only discovered once the plugin is *installed* — without
+the links this repo cannot use the commands it ships.
 
 Without the notice channel the report still appears, but wrapped in
 `Stop hook error: Failed with non-blocking status code`, which reads as a broken

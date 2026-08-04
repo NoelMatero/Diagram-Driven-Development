@@ -1,0 +1,1 @@
+../../commands/update-diagram.md

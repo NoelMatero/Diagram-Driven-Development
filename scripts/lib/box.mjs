@@ -70,20 +70,26 @@ export function pad(text, cells, align = "left") {
   return text + " ".repeat(gap);
 }
 
-const LINES = { topLeft: "┌", topRight: "┐", bottomLeft: "└", bottomRight: "┘", horizontal: "─", vertical: "│" };
+const LINES = {
+  topLeft: "┌", topRight: "┐", bottomLeft: "└", bottomRight: "┘",
+  horizontal: "─", vertical: "│", teeRight: "├", teeLeft: "┤",
+};
 
 /**
- * A framed list, with the heading in the top border and the footer in the bottom.
+ * A framed list. The first section's label rides in the top border, each later
+ * section is introduced by a divider carrying its own label, and the footer rides
+ * in the bottom border.
  *
- * Rows of their own for those two cost four extra lines once the separators are
- * counted, and this notice fires at the end of every turn. In the border they cost
- * nothing.
+ * One box with dividers rather than a stack of boxes: two boxes touching show
+ * `└────┘` immediately above `┌────┐`, which is a wasted line and, worse, two
+ * widths that have no reason to agree. Sharing one frame makes them agree by
+ * construction.
  */
-export function box({ head = "", foot = "", rows = [], min = 38, max = 64 }) {
+export function box({ head = "", foot = "", rows = [], sections, min = 38, max = 64 }) {
+  const parts = sections ?? [{ label: head, rows }];
   const widest = Math.max(
-    width(head) + 4,
     width(foot) + 4,
-    ...rows.map((row) => width(row)),
+    ...parts.map((part) => Math.max(width(part.label ?? "") + 4, ...part.rows.map((row) => width(row)))),
   );
   const inner = Math.min(max, Math.max(min, widest));
 
@@ -95,9 +101,17 @@ export function box({ head = "", foot = "", rows = [], min = 38, max = 64 }) {
     return left + text + LINES.horizontal.repeat(Math.max(1, rest)) + right;
   };
 
-  return [
-    edge(LINES.topLeft, head, LINES.topRight),
-    ...rows.map((row) => `${LINES.vertical} ${pad(fit(row, inner), inner)} ${LINES.vertical}`),
-    edge(LINES.bottomLeft, foot, LINES.bottomRight),
-  ];
+  const lines = [];
+  parts.forEach((part, index) => {
+    lines.push(
+      index === 0
+        ? edge(LINES.topLeft, part.label, LINES.topRight)
+        : edge(LINES.teeRight, part.label, LINES.teeLeft),
+    );
+    for (const row of part.rows) {
+      lines.push(`${LINES.vertical} ${pad(fit(row, inner), inner)} ${LINES.vertical}`);
+    }
+  });
+  lines.push(edge(LINES.bottomLeft, foot, LINES.bottomRight));
+  return lines;
 }

@@ -82,6 +82,25 @@ describe("box", () => {
     expect(lines.at(-1)).toContain("foot");
   });
 
+  it("joins sections with a divider instead of stacking two boxes", () => {
+    const lines = box({
+      sections: [
+        { label: "first.excalidraw  1 gone", rows: ["a → b"] },
+        { label: "second.excalidraw  2 gone", rows: ["c → d", "e → f"] },
+      ],
+      foot: "/update-diagram updates the diagram",
+    });
+    // Two boxes touching would show └────┘ directly above ┌────┐: a wasted line,
+    // and two widths with no reason to agree.
+    expect(lines.filter((line) => line.startsWith("┌"))).toHaveLength(1);
+    expect(lines.filter((line) => line.startsWith("└"))).toHaveLength(1);
+    expect(lines.filter((line) => line.startsWith("├"))).toHaveLength(1);
+    // top border, first row, divider, then the second section's rows.
+    expect(lines[2]).toContain("second.excalidraw");
+    // One frame means one width, by construction.
+    expect(new Set(lines.map(width)).size).toBe(1);
+  });
+
   it("grows for a long row and cuts one that would overrun", () => {
     const short = render(["a"]);
     const long = render(["a".repeat(50)]);

@@ -6,6 +6,7 @@ export function box(spec: {
   head?: string;
   foot?: string;
   rows?: string[];
+  sections?: Array<{ label?: string; rows: string[] }>;
   min?: number;
   max?: number;
 }): string[];

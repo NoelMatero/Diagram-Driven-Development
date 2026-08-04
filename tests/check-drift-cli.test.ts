@@ -458,8 +458,11 @@ describe("--details", () => {
     expect(out).toContain("two.excalidraw");
     expect(out).toContain("12 arrows");
     expect(out).toContain("1 gone");
-    // Two boxes, so two top borders.
-    expect((out.match(/┌/g) ?? []).length).toBe(2);
+    // One frame, not two boxes: the second diagram is introduced by a divider, so
+    // there is a single top border and a single bottom one.
+    expect((out.match(/┌/g) ?? []).length).toBe(1);
+    expect((out.match(/├/g) ?? []).length).toBe(1);
+    expect((out.match(/└/g) ?? []).length).toBe(1);
   }, 180_000);
 
   it("names the command once, under everything", () => {

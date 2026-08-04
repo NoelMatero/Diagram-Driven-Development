@@ -1,6 +1,27 @@
 # Drift check: keeping a diagram honest about the code
 
-Status: **design, not built.** Reference this file when implementing.
+Status: **missing files and symbols are built** — `src/engine/drift.ts`, the
+`check_drift` tool, `scripts/check-drift.mjs`, and a `Stop` hook in
+`.claude/settings.json`. Unrepresented modules and edge mismatches are still
+design; the rest of this file is the reasoning behind both halves.
+
+What changed while building it:
+
+- **Labels that are unambiguously paths are read as refs**, reported as
+  `inferred`. Without this, every diagram drawn before `ref` existed was
+  invisible to the check. The pattern demands a slash and a file extension, so
+  `Auth` and `POST /api/file` are still skipped.
+- **`Stop`, not `PostToolUse`.** One run per turn instead of dozens, output
+  arriving when the model could act on it, and no debounce logic to get wrong.
+- **Silent when clean**, which matters more than it sounds: a check that
+  announces good news thirty times an hour gets switched off.
+- **The plugin does not ship the hook.** `hooks/hooks.json` at a plugin root is
+  auto-discovered, so shipping one would spawn a subprocess on every turn in
+  every project someone installs this into, most of which have no diagrams. It
+  is documented as opt-in instead.
+- **Refs are confined like board paths.** They are model-authored strings that
+  become filesystem reads, so they resolve inside the root and are re-checked
+  after realpath; a symlink out of the tree cannot be used to probe for files.
 
 A committed diagram is documentation, and documentation rots. The point of
 diagram-driven development is that the picture stays true, so the board needs a
@@ -77,22 +98,35 @@ behaviour has to come from the harness.
 
 - **Soft** — a line in the plugin skill: regenerate the affected diagram after
   changing module structure. Usually works, not guaranteed.
-- **Hard** — a Claude Code `PostToolUse` hook matching `Edit|Write` runs
-  `check-drift.mjs`. The harness executes it whether or not the model
-  remembered. Output lands in context, and regeneration follows from there.
-- **Hardest** — pre-commit or CI, catching drift introduced without Claude.
+- **Hard** — a `Stop` hook runs `check-drift.mjs` once per turn. The harness
+  executes it whether or not the model remembered. This is what is built.
+- **Hardest** — pre-commit or CI, catching drift introduced without Claude. The
+  script's exit code is there for it; nothing wires it up yet.
 
-Confirm the exact hook event name and config schema against current Claude Code
-docs before writing `settings.json`; a wrong key fails silently, which is worse
-than not having the hook.
+The config shape was worth confirming twice, since a wrong key fails silently:
+the published docs say `Stop` ignores matchers, while the plugin-dev validator
+rejects a hook without one. `"matcher": "*"` satisfies both.
 
-**Debounce.** Firing on every `Edit` is noisy and slow. Only run when the edit
-touched a file some node's `ref` points at, or batch on `Stop` instead of
-per-edit.
+Both reporting channels were measured on a real `Stop` hook, and only one of them
+works:
+
+| Script behaviour | What the user sees |
+| --- | --- |
+| stderr, exit 1 | `Stop hook error: Failed with non-blocking status code:` then the full report |
+| stdout, exit 0 | nothing at all |
+
+So exit 1 it is, despite the misleading wrapper: visible and mislabelled beats
+correct and silent. The report leads with "drift check:" and ends with "nothing
+has failed" to carry the framing the wrapper strips. Exit 2 would put the text in
+front of the model instead, at the cost of blocking the turn from ending, so it
+was not used.
+
+Worth re-testing if hook output rendering changes; the second row is the one that
+should be usable, and if it ever becomes so the wording can go back to neutral.
 
 ## Open questions
 
-- Should drift auto-regenerate, or only report? Leaning **report only**: silent
+- ~~Should drift auto-regenerate, or only report?~~ **Report only.** Silent
   redrawing while someone is reading the board is hostile, and regeneration
   discards layout intent.
 - What is the relevance threshold for "unrepresented"? Without one, every new
@@ -104,10 +138,16 @@ per-edit.
 
 ## Rough order of work
 
-1. `src/engine/drift.ts` with the missing-ref check only.
-2. `ref` on the `create_diagram` node schema, threaded through `customData`.
-3. `check_drift` MCP tool and `scripts/check-drift.mjs`.
-4. Tests: a board whose refs all exist is clean; deleting a referenced file
-   reports exactly one missing node; hand-drawn nodes never appear as drift.
-5. Only then: unrepresented modules and edge mismatches, each behind its own
-   flag so a noisy check can be turned off without losing the useful one.
+1. ~~`src/engine/drift.ts` with the missing-ref check only.~~ Done, plus symbols.
+2. ~~`ref` on the `create_diagram` node schema, threaded through `customData`.~~
+3. ~~`check_drift` MCP tool and `scripts/check-drift.mjs`.~~
+4. ~~Tests.~~ `tests/engine-drift.test.ts`, plus the round trip through a real
+   stdio server in `tests/mcp-server.test.ts`.
+5. Next: unrepresented modules and edge mismatches, each behind its own flag so
+   a noisy check can be turned off without losing the useful one.
+
+Before building (5), wait and see whether (1)–(4) ever fires on real work. The
+cheap check is deliberately the least likely to have anything to say: files are
+rarely deleted, so most rot is a relationship changing, which only edge
+mismatches catch. If refs never get set in practice, that is the thing to fix
+first, and no amount of import-graph work would have helped.

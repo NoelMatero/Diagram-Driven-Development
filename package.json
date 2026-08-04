@@ -11,6 +11,7 @@
     "build:viewer": "vite build --config vite.viewer.config.ts",
     "postinstall": "node scripts/build-vendor.mjs && npm run build:viewer",
     "typecheck": "tsc --noEmit",
+    "check:drift": "tsx scripts/check-drift.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e:board": "tsx scripts/e2e-live-board.mjs",

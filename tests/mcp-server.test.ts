@@ -4,7 +4,7 @@
  * schemas, serialisation, or path handling break, these fail.
  */
 import { mkdtempSync, rmSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -57,6 +57,7 @@ describe("board MCP server", () => {
     expect(names).toEqual(
       [
         "board_status",
+        "check_drift",
         "connect_nodes",
         "create_diagram",
         "delete_diagram",
@@ -248,6 +249,78 @@ describe("board MCP server", () => {
     });
     expect((result as { isError?: boolean }).isError).toBe(true);
     expect(textOf(result)).toMatch(/Available: arch/);
+  }, 120_000);
+
+  /**
+   * The end-to-end path that matters for drift: a ref given to create_diagram
+   * has to survive the schema, land in customData, come back from read_diagram,
+   * and be what check_drift compares against the real working tree.
+   */
+  it("carries a node's ref through to check_drift", async () => {
+    const board = "refs.excalidraw";
+    await writeFile(path.join(workspace, "kept.ts"), "export function keptSymbol() {}\n");
+    await call("create_diagram", {
+      path: board,
+      nodes: [
+        { id: "kept", label: "Kept", ref: "kept.ts" },
+        { id: "symbol", label: "Symbol", ref: "kept.ts#keptSymbol" },
+        { id: "plain", label: "No ref here" },
+      ],
+    });
+
+    const graph = jsonOf(await call("read_diagram", { path: board }));
+    const refs = (graph.nodes as Array<{ id: string; ref?: string }>).map((node) => node.ref);
+    expect(refs).toEqual(["kept.ts", "kept.ts#keptSymbol", undefined]);
+
+    const clean = jsonOf(await call("check_drift", { path: board }));
+    expect(clean).toMatchObject({ clean: true, checked: 2, skipped: 1 });
+    expect(clean.note).toBeUndefined();
+
+    rmSync(path.join(workspace, "kept.ts"));
+    const drifted = jsonOf(await call("check_drift", { path: board }));
+    expect(drifted.clean).toBe(false);
+    expect((drifted.findings as Array<{ node: string }>).map((finding) => finding.node)).toEqual([
+      "kept",
+      "symbol",
+    ]);
+    // Every finding names its own board, because a project holds several and a
+    // caller has to know which file to redraw.
+    expect((drifted.findings as Array<{ board: string }>).every((f) => f.board === board)).toBe(true);
+  }, 120_000);
+
+  /**
+   * No diagram is "current": a project holds as many as it likes, and checking
+   * means checking all of them unless one is named.
+   */
+  it("checks every diagram at once when no path is given", async () => {
+    const dir = path.join(workspace, "docs", "diagrams");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(workspace, "present.ts"), "export const present = 1;\n");
+    await call("create_diagram", {
+      path: "docs/diagrams/one.excalidraw",
+      nodes: [{ id: "a", label: "Here", ref: "present.ts" }],
+    });
+    await call("create_diagram", {
+      path: "docs/diagrams/two.excalidraw",
+      nodes: [{ id: "b", label: "Gone", ref: "never-existed.ts" }],
+    });
+
+    const report = jsonOf(await call("check_drift", {}));
+    expect(report.boards).toEqual(["docs/diagrams/one.excalidraw", "docs/diagrams/two.excalidraw"]);
+    expect(report.clean).toBe(false);
+    // Only the second board is stale, and the report says which.
+    expect(report.findings).toHaveLength(1);
+    expect(report.findings).toMatchObject([{ board: "docs/diagrams/two.excalidraw", node: "b" }]);
+    expect(report.checked).toBe(2);
+  }, 120_000);
+
+  it("says when a clean report checked nothing at all", async () => {
+    const board = "no-refs.excalidraw";
+    await call("create_diagram", { path: board, nodes: [{ id: "a", label: "Auth" }] });
+    const report = jsonOf(await call("check_drift", { path: board }));
+    // "clean: true" over zero comparisons would otherwise read as a pass.
+    expect(report).toMatchObject({ clean: true, checked: 0 });
+    expect(report.note).toMatch(/No node carried a ref/);
   }, 120_000);
 
   /**

@@ -24,6 +24,7 @@ import {
   listDiagrams,
 } from "../engine/diagram";
 import { readGraph } from "../engine/graph";
+import { checkDrift, createWorkspace, DEFAULT_DIAGRAM_DIR, findBoards } from "../engine/drift";
 import { loadConverter } from "../engine/convert";
 import { renderBoardToPng } from "../engine/render";
 import {
@@ -116,6 +117,14 @@ const nodeSchema = z.object({
   backgroundColor: z.string().optional(),
   strokeColor: z.string().optional(),
   rounded: z.boolean().optional(),
+  ref: z
+    .string()
+    .optional()
+    .describe(
+      "What this node stands for in the repo: a path, or path#symbol, e.g. src/engine/layout.ts. "
+      + "Set it when a node is a real file or module so check_drift can tell when it goes stale. "
+      + "Leave it off for anything not in this repository.",
+    ),
 });
 
 const edgeSchema = z.object({
@@ -323,6 +332,69 @@ server.registerTool(
               elements: board.elements
                 .filter((element) => element.isDeleted !== true)
                 .map(projectElement),
+            }
+          : {}),
+      });
+    }),
+);
+
+server.registerTool(
+  "check_drift",
+  {
+    title: "Check drift",
+    description:
+      "Do these diagrams still match the code? Compares each node's ref against the working tree "
+      + "and reports the ones pointing at a file or symbol that is gone. Read-only, and cheap "
+      + "enough to run whenever module structure changes. Nodes without a ref are skipped and "
+      + "hand-drawn ones ignored, so a clean report means nothing checkable disagreed -- not that "
+      + "the diagram is correct.",
+    inputSchema: {
+      path: z
+        .string()
+        .optional()
+        .describe(`One board to check. Omit to check every board in ${DEFAULT_DIAGRAM_DIR}.`),
+    },
+  },
+  async ({ path: boardPath }) =>
+    guard(async () => {
+      const files = boardPath
+        ? [resolveBoardPath(boardPath)]
+        : await findBoards(WORKSPACE_ROOT);
+      if (files.length === 0) {
+        return text({
+          note:
+            `No .excalidraw files in ${DEFAULT_DIAGRAM_DIR}. Pass path to check a board somewhere `
+            + "else.",
+        });
+      }
+
+      const workspace = createWorkspace(WORKSPACE_ROOT);
+      const totals = { checked: 0, skipped: 0, handDrawn: 0 };
+      const findings: Array<Record<string, unknown>> = [];
+      for (const file of files) {
+        const report = checkDrift(await readBoard(file), workspace);
+        totals.checked += report.checked;
+        totals.skipped += report.skipped;
+        totals.handDrawn += report.handDrawn;
+        // Named per finding rather than grouped: a caller acting on one needs to
+        // know which file to redraw, and flat is cheaper than nesting.
+        for (const finding of report.findings) {
+          findings.push({ board: relativeToWorkspace(file), ...finding });
+        }
+      }
+
+      return text({
+        boards: files.map((file) => relativeToWorkspace(file)),
+        clean: findings.length === 0,
+        findings,
+        ...totals,
+        // "clean: true, checked: 0" reads as a pass when nothing was examined,
+        // so say which it was.
+        ...(totals.checked === 0
+          ? {
+              note:
+                "No node carried a ref, so nothing was compared against the code. Set ref on nodes "
+                + "that stand for a file or module when regenerating these diagrams.",
             }
           : {}),
       });

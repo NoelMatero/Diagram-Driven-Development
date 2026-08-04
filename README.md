@@ -76,6 +76,7 @@ existing users stay on the version they have.
 | `read_diagram` | Read a board back as a graph, with provenance on every fact. |
 | `edit_diagram` | Patch or delete elements by id, hand-drawn ones included. |
 | `delete_diagram` | Remove a named diagram, keeping hand-drawn work. |
+| `check_drift` | Report nodes pointing at code that no longer exists. |
 | `connect_nodes` | Draw bound arrows between existing shapes, including ones you drew. |
 | `render_diagram` | Rasterise to PNG, so the model can look at what it made. |
 | `place_image` | Put an image on the board, beside the diagram that specified it. |
@@ -114,4 +115,39 @@ src/server/   the live board: HTTP, SSE, file watching, conflict handling
 src/viewer/   the browser page and the sync loop behind it
 ```
 
-Planned: drift detection, so a diagram that no longer matches the code says so. Design in [docs/drift-check.md](docs/drift-check.md).
+## Keeping a diagram honest
+
+A node can record what it stands for — `ref: "src/engine/layout.ts"`, or
+`path#symbol` — and `check_drift` compares those claims against the working tree:
+
+```bash
+npm run check:drift                    # every board in docs/diagrams
+npm run check:drift docs/diagrams/architecture.excalidraw
+```
+
+Silent when nothing has drifted, exit 1 with a report when a node points at a
+file or symbol that is gone — which is what CI and pre-commit want.
+
+`.claude/settings.json` here also runs it at the end of every turn. To do the
+same in your own project, add this to its `.claude/settings.json`, pointing at
+wherever you cloned this repo:
+
+```json
+{ "hooks": { "Stop": [{ "matcher": "*", "hooks": [
+  { "type": "command", "command": "npx tsx /abs/path/to/board/scripts/check-drift.mjs" }
+] }] } }
+```
+
+Claude Code prefixes the report with `Stop hook error: Failed`, because the script
+exits non-zero. Nothing is broken when you see that — it is the only channel that
+shows up at all; exiting 0 with the report on stdout is silently discarded. The
+path has to be absolute, because `${CLAUDE_PLUGIN_ROOT}` is only substituted in
+configuration the plugin itself provides, not in yours. The plugin does not
+install this hook for you either, because a project with no diagrams should not
+pay for a subprocess on every turn.
+
+Deliberately shallow: existence only, no import graph, no model. Nodes without a
+`ref` are skipped rather than guessed at and hand-drawn boxes are ignored
+entirely, so a clean report means nothing checkable disagreed — not that the
+diagram is correct. Remaining design, including edge mismatches, in
+[docs/drift-check.md](docs/drift-check.md).

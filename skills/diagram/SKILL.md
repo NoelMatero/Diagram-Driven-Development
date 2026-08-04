@@ -47,6 +47,20 @@ afterwards, since the next regenerate would revert a patch.
 Keep edge labels to one or two words. `direction: "DOWN"` suits a sequence or a
 pipeline; the default `RIGHT` suits most architecture.
 
+## Point nodes at the code they stand for
+
+When a node is a real file or module in this repo, set `ref` on it:
+`ref: "src/engine/layout.ts"`, or `path#symbol` for a single function. That is
+what lets `check_drift` say later that a diagram has gone stale.
+
+Only for things that exist in the repository. A diagram of a protocol, a vendor
+system, or anything you are sketching out has nothing to point at, and inventing
+a path there is worse than leaving it off.
+
+Run `check_drift` after changing module structure, and regenerate the diagram it
+complains about. A clean report with `checked: 0` means no node had a ref, not
+that the diagram is right.
+
 ## Check your work once
 
 `render_diagram` returns an image you can actually look at — use it to catch

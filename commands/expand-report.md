@@ -1,6 +1,6 @@
 ---
 description: Show every stale box and arrow, per diagram, instead of the summary
-allowed-tools: Bash(npm run check:drift -- --details), Bash(npx -y -p board-ai board-drift --details), mcp__board__check_drift, Read, Grep, Glob
+allowed-tools: Bash(npm run check:drift -- --details), Bash(npx -y -p diagramos diagramos-drift --details), mcp__diagramos__check_drift, Read, Grep, Glob
 ---
 
 The drift notice is trimmed on purpose: it fires at the end of every turn, so it
@@ -13,7 +13,7 @@ npm run check:drift -- --expand
 ```
 
 If that script is not in this project — the usual case, since the notice comes from
-an installed plugin — run `npx -y -p board-ai board-drift --expand` instead.
+an installed plugin — run `npx -y -p diagramos diagramos-drift --expand` instead.
 
 `--expand` prints every finding *and* leaves the notice expanded from now on, so
 the end-of-turn notice shows all of them too. `/shrink-report` puts it back. Use

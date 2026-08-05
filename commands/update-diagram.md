@@ -1,6 +1,6 @@
 ---
 description: Bring diagrams that have gone out of date back in line with the code
-allowed-tools: Bash(npm run check:drift), Bash(npx -y -p board-ai board-drift), mcp__board__check_drift, mcp__board__read_diagram, mcp__board__create_diagram, mcp__board__edit_diagram, mcp__board__delete_diagram, Read, Grep, Glob
+allowed-tools: Bash(npm run check:drift), Bash(npx -y -p diagramos diagramos-drift), mcp__diagramos__check_drift, mcp__diagramos__read_diagram, mcp__diagramos__create_diagram, mcp__diagramos__edit_diagram, mcp__diagramos__delete_diagram, Read, Grep, Glob
 ---
 
 A diagram in this repo points at code that has moved or gone. Bring the diagram

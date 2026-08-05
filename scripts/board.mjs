@@ -24,12 +24,12 @@ const file = path.resolve(process.cwd(), path.extname(target) ? target : `${targ
 // Materialise the file first so the watcher has something to follow.
 await writeBoard(file, await readBoard(file));
 
-const server = await startBoardServer({ file, port: resolveBoardPort(process.env.BOARD_PORT) });
+const server = await startBoardServer({ file, port: resolveBoardPort(process.env.DIAGRAMOS_PORT) });
 console.log(`board  ${path.relative(process.cwd(), file)}`);
 console.log(`live   ${server.url}`);
 console.log("ctrl-c to stop");
 
-if (process.env.BOARD_NO_OPEN !== "1") {
+if (process.env.DIAGRAMOS_NO_OPEN !== "1") {
   const command = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
   spawn(command, [server.url], { detached: true, stdio: "ignore" }).unref();
 }

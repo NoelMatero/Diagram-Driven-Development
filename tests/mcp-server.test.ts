@@ -61,7 +61,7 @@ beforeAll(async () => {
       command: "npx",
       args: ["tsx", path.join(REPO, "src/mcp/server.ts")],
       cwd: REPO,
-      env: { ...process.env, BOARD_MCP_ROOT: workspace, BOARD_PORT: String(boardPort) },
+      env: { ...process.env, DIAGRAMOS_MCP_ROOT: workspace, DIAGRAMOS_PORT: String(boardPort) },
     }),
   );
 }, 120_000);

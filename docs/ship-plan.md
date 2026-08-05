@@ -138,7 +138,7 @@ copied by hand.
 ## Phase 2 — make the plugin work when installed
 
 **Decided: publish to npm.** The plugin's `mcpServers` command is
-`npx -y board-ai@<version>`, pinned to the plugin version so a version-cached
+`npx -y diagramos@<version>`, pinned to the plugin version so a version-cached
 plugin install cannot pick up a newer server. Rejected: committing ~51 MB of
 build output per rebuild into git, and bootstrapping dependencies on first run
 (silent, slow, offline-hostile).
@@ -196,7 +196,7 @@ installing the tarball never runs a build it has no tools for.
 **Run so far.** `npm pack` then `npm install <tarball>` into an empty project
 unrelated to this repo (never a symlink — a symlink borrows this repo's
 `node_modules` and passes misleadingly), then driving the installed
-`node_modules/.bin/board-ai` over stdio. 9/9: server starts and lists 11 tools,
+`node_modules/.bin/diagramos` over stdio. 9/9: server starts and lists 11 tools,
 `create_diagram` writes a file, `read_diagram` returns the graph, `check_drift`
 catches a box pointing at a deleted file, `render_diagram` returns a real 30 KB
 PNG, `open_board` serves the viewer page *and* its built bundle over HTTP,
@@ -206,9 +206,9 @@ prints the version-pinned install command instead of failing.
 
 **Still unverified, and the last link in the chain**: installing through
 `/plugin marketplace add` in Claude Code, i.e. that the plugin manifest registers
-the server and `${CLAUDE_PROJECT_DIR}` reaches it as `BOARD_MCP_ROOT`. Cannot be
-tested end to end until `board-ai` is on npm, because the manifest pins
-`npx -y board-ai@0.1.0`. Use a throwaway `CLAUDE_CONFIG_DIR` when doing it, and
+the server and `${CLAUDE_PROJECT_DIR}` reaches it as `DIAGRAMOS_MCP_ROOT`. Cannot be
+tested end to end until `diagramos` is on npm, because the manifest pins
+`npx -y diagramos@0.1.0`. Use a throwaway `CLAUDE_CONFIG_DIR` when doing it, and
 verify afterwards that the real config was untouched.
 
 **Publishing is the user's to run** — the account is theirs and `npm whoami`

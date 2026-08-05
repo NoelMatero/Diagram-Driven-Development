@@ -15,7 +15,7 @@ export const EXCALIDRAW_FILE_TYPE = "excalidraw";
 export const EXCALIDRAW_FILE_VERSION = 2;
 // Provenance recorded in every file Excalidraw opens. Set this to the
 // project's public URL once the plugin has one.
-const SOURCE = "board-ai";
+const SOURCE = "diagramos";
 
 export interface BoardFile {
   type: string;

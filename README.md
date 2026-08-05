@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/wiley-logo.svg" alt="Wiley" width="380" />
+  <img src="assets/diagramos-logo.svg" alt="DiagramOS" width="380" />
 </p>
 
 <p align="center">
@@ -38,14 +38,14 @@ Claude gets that file as a first-class artifact. It can draw a diagram, read one
 It is a Claude Code plugin. From inside Claude Code:
 
 ```
-/plugin marketplace add NoelMatero/Diagram-Driven-Development
-/plugin install board@diagram-driven-development
+/plugin marketplace add NoelMatero/diagramos
+/plugin install diagramos@diagramos
 ```
 
-That brings the ten board tools and a `diagram` skill. Diagrams are written into
+That brings the eleven diagram tools and a `diagram` skill. Diagrams are written into
 whichever project you are working in, never into the plugin's own directory.
 
-The server itself comes from npm (`npx -y board-ai`), which npm fetches once and
+The server itself comes from npm (`npx -y diagramos`), which npm fetches once and
 caches — the first session after installing takes a few seconds longer to
 connect. Exporting a PNG additionally needs a headless browser; `render_diagram`
 prints the one command to install it the first time you ask for one. Nothing else
@@ -67,7 +67,7 @@ To exercise the plugin from *another* project without waiting on a release, link
 it into a skills directory — it loads in place rather than being copied:
 
 ```bash
-ln -s "$PWD" ~/.claude/skills/board    # loads as board@skills-dir
+ln -s "$PWD" ~/.claude/skills/diagramos   # loads as diagramos@skills-dir
 ```
 
 A marketplace install copies into a version-pinned cache instead, so bump
@@ -78,7 +78,7 @@ existing users stay on the version they have.
 
 Three things move together, and a release is broken if they disagree: `version`
 in `package.json`, `version` in `.claude-plugin/plugin.json`, and the pinned
-`board-ai@x.y.z` that plugin's `mcpServers` command runs.
+`diagramos@x.y.z` that plugin's `mcpServers` command runs.
 
 ```bash
 npm version patch                      # or minor / major
@@ -88,7 +88,7 @@ git push --follow-tags
 ```
 
 The pin is deliberate. A plugin install is cached by version, so an unpinned
-`npx -y board-ai` would hand an old plugin a newer server on some future morning
+`npx -y diagramos` would hand an old plugin a newer server on some future morning
 with nothing in the release notes to explain it.
 
 ## Tools
@@ -177,7 +177,7 @@ same in your own project, add this to its `.claude/settings.json`:
 
 ```json
 { "hooks": { "Stop": [{ "matcher": "*", "hooks": [
-  { "type": "command", "command": "npx -y -p board-ai@0.1.0 board-drift --hook" }
+  { "type": "command", "command": "npx -y -p diagramos@0.1.0 diagramos-drift --hook" }
 ] }] } }
 ```
 

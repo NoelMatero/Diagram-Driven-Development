@@ -543,7 +543,7 @@ describe("how much the notice says", () => {
  *
  * A command cannot reach into a notice the hook has already written, so making
  * /expand-report affect *later* notices means leaving a preference behind. It lives
- * in .board-ai/, which is gitignored, so it is one person's and not the repo's.
+ * in .diagramos/, which is gitignored, so it is one person's and not the repo's.
  *
  * The standing objection to a mode is that it is invisible once set. That is
  * answered by the notice itself: while expanded, it names the way back.

@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "board": {
+    "diagramos": {
       "command": "npx",
       "args": ["tsx", "src/mcp/server.ts"]
     }

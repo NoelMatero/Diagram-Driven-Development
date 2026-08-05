@@ -18,8 +18,8 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
-    port: Number(process.env.BOARD_VIEWER_DEV_PORT?.trim() || 5175),
+    port: Number(process.env.DIAGRAMOS_VIEWER_DEV_PORT?.trim() || 5175),
     strictPort: true,
-    proxy: { "/api": { target: `http://127.0.0.1:${process.env.BOARD_PORT?.trim() || 4747}` } },
+    proxy: { "/api": { target: `http://127.0.0.1:${process.env.DIAGRAMOS_PORT?.trim() || 4747}` } },
   },
 });

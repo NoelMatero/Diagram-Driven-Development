@@ -78,14 +78,14 @@ function parseArgs() {
  *
  * A file rather than an argument, because the caller that needs to know is the
  * *next* hook run, and a command cannot reach into a message the hook has already
- * written. It lives in .board-ai/, which is gitignored, so the preference is one
+ * written. It lives in .diagramos/, which is gitignored, so the preference is one
  * person's and not the repository's.
  *
  * The obvious objection to a mode is that it is invisible once set and then
  * puzzling — so the expanded notice always names the way back. Nothing here is
  * remembered that the notice does not say out loud.
  */
-const MODE_FILE = path.join(root, ".board-ai", "report-expanded");
+const MODE_FILE = path.join(root, ".diagramos", "report-expanded");
 
 function setExpanded(on) {
   if (on) {

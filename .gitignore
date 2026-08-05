@@ -5,7 +5,7 @@ out/
 release/
 coverage/
 .env
-.board-ai/
+.diagramos/
 .DS_Store
 *.log
 test-results/

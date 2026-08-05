@@ -37,11 +37,11 @@ const MIME_BY_EXT: Record<string, string> = {
   ".ico": "image/x-icon",
 };
 
-/** Where the board listens unless BOARD_PORT says otherwise. */
+/** Where the board listens unless DIAGRAMOS_PORT says otherwise. */
 export const DEFAULT_BOARD_PORT = 4747;
 
 /**
- * The port to serve on, from a BOARD_PORT-style value.
+ * The port to serve on, from a DIAGRAMOS_PORT-style value.
  *
  * A bad value is refused rather than coerced. `Number("abc")` is NaN, which is
  * not nullish, so it survives every `?? default` on the way down and reaches
@@ -54,7 +54,7 @@ export function resolveBoardPort(raw: string | undefined): number {
   if (!trimmed) return DEFAULT_BOARD_PORT;
   const port = Number(trimmed);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error(`BOARD_PORT is "${raw}", which is not a port number between 1 and 65535.`);
+    throw new Error(`DIAGRAMOS_PORT is "${raw}", which is not a port number between 1 and 65535.`);
   }
   return port;
 }

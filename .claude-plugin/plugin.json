@@ -1,23 +1,23 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
-  "name": "board",
-  "displayName": "Diagram-Driven Development",
+  "name": "diagramos",
+  "displayName": "DiagramOS",
   "version": "0.1.0",
   "description": "Excalidraw diagrams that live in the repo: Claude draws them, reads them back as a graph, and writes code from them. Includes a live local board you can draw on at the same time.",
   "author": {
     "name": "Noel Matero",
     "url": "https://github.com/NoelMatero"
   },
-  "repository": "https://github.com/NoelMatero/Diagram-Driven-Development",
+  "repository": "https://github.com/NoelMatero/diagramos",
   "keywords": ["diagram", "excalidraw", "architecture", "documentation", "mcp"],
   "license": "MIT",
   "mcpServers": {
-    "board": {
+    "diagramos": {
       "//": "From npm, not from ${CLAUDE_PLUGIN_ROOT}: installing a plugin copies files into a cache without running npm install, so the sources here have no dependencies and no build output. Version pinned to this manifest's version so a cached plugin cannot silently pick up a newer server.",
       "command": "npx",
-      "args": ["-y", "board-ai@0.1.0"],
+      "args": ["-y", "diagramos@0.1.0"],
       "env": {
-        "BOARD_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
+        "DIAGRAMOS_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
       }
     }
   }

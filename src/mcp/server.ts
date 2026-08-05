@@ -148,13 +148,13 @@ const edgeSchema = z.object({
 let live: RunningBoardServer | undefined;
 
 /**
- * Read on use rather than once at load, so a malformed BOARD_PORT fails only
+ * Read on use rather than once at load, so a malformed DIAGRAMOS_PORT fails only
  * the two tools that need a port. Resolving it at module scope would throw
  * before the transport connects and take the whole server down, including every
  * file tool that never touches the network.
  */
 function boardPort(): number {
-  return resolveBoardPort(process.env.BOARD_PORT);
+  return resolveBoardPort(process.env.DIAGRAMOS_PORT);
 }
 
 /**
@@ -211,7 +211,7 @@ async function followBoard(file: string): Promise<void> {
 }
 
 const server = new McpServer(
-  { name: "board", version: "0.1.0" },
+  { name: "diagramos", version: "0.1.0" },
   {
     instructions:
       "Diagrams are .excalidraw files in the repo. A board holds one diagram: create_diagram "
@@ -764,7 +764,7 @@ async function main(): Promise<void> {
   void loadConverter().catch(() => undefined);
   await server.connect(new StdioServerTransport());
   // stdout is the protocol channel; diagnostics must go to stderr.
-  console.error(`board MCP server ready (workspace: ${WORKSPACE_ROOT})`);
+  console.error(`diagramos MCP server ready (workspace: ${WORKSPACE_ROOT})`);
 }
 
 main().catch((error) => {

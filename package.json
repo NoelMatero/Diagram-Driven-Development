@@ -1,5 +1,5 @@
 {
-  "name": "board-ai",
+  "name": "diagramos",
   "version": "0.1.0",
   "description": "Diagram-driven development: an MCP server that gives Claude read/write access to Excalidraw diagrams that live in the repo, plus a live local board.",
   "keywords": [
@@ -14,13 +14,13 @@
   "author": "Noel Matero (https://github.com/NoelMatero)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NoelMatero/Diagram-Driven-Development.git"
+    "url": "git+https://github.com/NoelMatero/diagramos.git"
   },
-  "homepage": "https://github.com/NoelMatero/Diagram-Driven-Development#readme",
+  "homepage": "https://github.com/NoelMatero/diagramos#readme",
   "type": "module",
   "bin": {
-    "board-ai": "out/cli/server.mjs",
-    "board-drift": "out/cli/drift.mjs"
+    "diagramos": "out/cli/server.mjs",
+    "diagramos-drift": "out/cli/drift.mjs"
   },
   "files": [
     "out/cli/",

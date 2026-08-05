@@ -140,7 +140,7 @@ padded row it appeared in.
 it back. That is a mode, which is normally the wrong answer — but a command runs
 *during* a turn and the notice is written by the hook *after* it, so affecting a
 later notice can only be done by leaving something behind. It is a marker file in
-`.board-ai/` (gitignored, so it is one person's preference and not the repo's), and
+`.diagramos/` (gitignored, so it is one person's preference and not the repo's), and
 the objection to modes is answered by the notice itself: while expanded, its footer
 names `/shrink-report`. Nothing is remembered that the notice does not say out loud.
 `--details` remains the one-off that changes nothing.

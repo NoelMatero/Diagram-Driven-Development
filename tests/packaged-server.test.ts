@@ -57,7 +57,7 @@ beforeAll(async () => {
       // Deliberately not REPO: an installed server runs from anywhere, and the
       // workspace arrives through the environment the way the plugin sets it.
       cwd: os.tmpdir(),
-      env: { ...process.env, BOARD_MCP_ROOT: workspace },
+      env: { ...process.env, DIAGRAMOS_MCP_ROOT: workspace },
     }),
   );
 }, 120_000);

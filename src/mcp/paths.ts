@@ -3,7 +3,7 @@
  *
  * Every tool takes a file path from the model, so all of them have to resolve
  * through here. The root defaults to the working directory and can be pinned
- * with BOARD_MCP_ROOT; anything resolving outside it is refused, symlinks
+ * with DIAGRAMOS_MCP_ROOT; anything resolving outside it is refused, symlinks
  * included.
  */
 import { realpathSync } from "node:fs";
@@ -17,7 +17,7 @@ function realOrResolved(target: string): string {
   }
 }
 
-export const WORKSPACE_ROOT = realOrResolved(process.env.BOARD_MCP_ROOT ?? process.cwd());
+export const WORKSPACE_ROOT = realOrResolved(process.env.DIAGRAMOS_MCP_ROOT ?? process.cwd());
 
 function isInsideRoot(target: string): boolean {
   const relative = path.relative(WORKSPACE_ROOT, target);
